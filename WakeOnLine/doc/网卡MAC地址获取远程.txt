@@ -1,0 +1,280 @@
+网卡MAC地址获取远程 
+ 
+首先在头文件定义中加入
+#include "nb30.h"
+#pragma comment(lib,"netapi32.lib")
+typedef struct _ASTAT_
+{
+ ADAPTER_STATUS adapt;
+ NAME_BUFFER    NameBuff[30];
+} ASTAT, * PASTAT;
+
+
+如何用VC++开发读取网卡MAC地址的程序
+ 
+2003-4-6 8:07:11   LYCOS   温卫红   阅读次数: 4693 
+在实际的应用系统中，我们往往会需要在程序运行时获取当前机器的网卡的MAC地址，以便作为某种标识之用，如控制程序的合法性等。下文就如何用Microsoft Visual C++ 6.0开发这样的程序演示如何实现其要点。 
+
+---- 这里采用的方法是通过Windows 9x/NT/Win2000中内置的NetApi32.DLL的功能来实现的，首先通过发送NCBENUM命令获取网卡的数目和每个网卡的内部编号，然后对每个网卡标号发送NCBASTAT命令获取其MAC地址。注意：这里的网卡是指捆绑了NetBeui协议的通信协议栈，可以在网卡的属性处查看到。 
+
+---- 请运行VC++，打开一个新的工程，选择创建一个Win32 Console程序，然后按下文输入代码，并请参见其中的注释： 
+
+#include "stdafx.h"
+
+#include < windows.h >
+#include < wincon.h >
+#include < stdlib.h >
+#include < stdio.h >
+#include < time.h >
+
+---- // 因为是通过NetAPI来获取网卡信息，所以需要包含其题头文件nb30.h #include < nb30.h > 
+typedef struct _ASTAT_
+{
+    ADAPTER_STATUS adapt;
+    NAME_BUFFER    NameBuff [30];
+}ASTAT, * PASTAT;
+
+ASTAT Adapter;    
+
+---- // 定义一个存放返回网卡信息的变量 
+---- // 输入参数：lana_num为网卡编号，一般地，从0开始，但在Windows 2000中并不一定是连续分配的 
+
+void getmac_one (int lana_num)
+{
+    NCB ncb;
+    UCHAR uRetCode;
+
+    memset( &ncb, 0, sizeof(ncb) );
+    ncb.ncb_command = NCBRESET;
+    ncb.ncb_lana_num = lana_num;   
+    // 指定网卡号
+
+---- // 首先对选定的网卡发送一个NCBRESET命令，以便进行初始化 
+    uRetCode = Netbios( &ncb );
+    printf( "The NCBRESET return code is:
+    0x%x \n", uRetCode );
+
+    memset( &ncb, 0, sizeof(ncb) );
+    ncb.ncb_command = NCBASTAT;
+    ncb.ncb_lana_num = lana_num;     // 指定网卡号
+
+    strcpy( (char *)ncb.ncb_callname, 
+    "*               " );
+    ncb.ncb_buffer = (unsigned char *) &Adapter;
+
+---- // 指定返回的信息存放的变量 
+    ncb.ncb_length = sizeof(Adapter);
+
+---- // 接着，可以发送NCBASTAT命令以获取网卡的信息 
+    uRetCode = Netbios( &ncb );
+    printf( "The NCBASTAT 
+    return code is: 0x%x \n", uRetCode );
+    if ( uRetCode == 0 )
+    {
+
+---- // 把网卡MAC地址格式化成常用的16进制形式，如0010-A4E4-5802 
+printf( "The Ethernet Number[%d]
+is: %02X%02X-%02X%02X-%02X%02X\n",
+     lana_num,
+  Adapter.adapt.adapter_address[0],
+  Adapter.adapt.adapter_address[1],
+  Adapter.adapt.adapter_address[2],
+  Adapter.adapt.adapter_address[3],
+  Adapter.adapt.adapter_address[4],
+  Adapter.adapt.adapter_address[5] );
+    }
+}
+
+int main(int argc, char* argv[]) 
+{
+    NCB ncb;
+    UCHAR uRetCode;
+    LANA_ENUM lana_enum;
+
+    memset( &ncb, 0, sizeof(ncb) );
+    ncb.ncb_command = NCBENUM;
+
+    ncb.ncb_buffer = (unsigned char *) &lana_enum;
+    ncb.ncb_length = sizeof(lana_enum);
+
+---- // 向网卡发送NCBENUM命令，以获取当前机器的网卡信息，如有多少个网卡、每张网卡的编号等 
+uRetCode = Netbios( &ncb );
+printf( "The NCBENUM return
+code is: 
+0x%x \n", uRetCode );
+ if ( uRetCode == 0 )
+ {
+ printf( "Ethernet Count is : %d\n\n", lana_enum.length);
+
+---- // 对每一张网卡，以其网卡编号为输入编号，获取其MAC地址 
+for ( int i=0; i< lana_enum.length; ++i)
+getmac_one( lana_enum.lana[i]);
+ }
+return 0;
+}
+
+---- 此时，按F7编译、直至通过，按F5运行即可。 
+---- 这段代码可以直接嵌入相关的应用系统之中，或封装成.DLL或COM控件，以便可以在Visual Basic、Visual Foxpro、Power Builder或Delphi等其他程序中调用
+
+
+ 
+ 
+
+网友对该文章的评论 
+ 网友: goat623(gxx623@sina.com) 发表于: 2003-10-16 9:18:07
+
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <Winsock2.h> 
+#include <Winsock.h> 
+#include <iphlpapi.h>
+#include <windows.h>
+#include <iostream.h>
+
+
+#pragma comment ( lib, "ws2_32.lib" )
+#pragma comment ( lib, "Iphlpapi.lib" )
+
+void main( int argc, char ** argv )
+{
+
+typedef struct _MIB_IPNETROW 
+{  DWORD dwIndex; 
+   DWORD dwPhysAddrLen;
+   BYTE bPhysAddr[MAXLEN_PHYSADDR];
+   DWORD dwAddr;
+   DWORD dwType;
+} MIB_IPNETROW, *PMIB_IPNETROW;
+
+typedef struct _ASTAT_
+{
+    ADAPTER_STATUS adapt;
+    NAME_BUFFER    NameBuff [30];
+}ASTAT, * PASTAT;
+ 
+ int iRet;
+ int numberOfHost;
+ struct in_addr sa;
+ unsigned char macAddress[6]; 
+ HOSTENT* remoteHostent;
+ IPAddr nRemoteAddr;
+ ULONG macAddLen = 6;
+ WSADATA wsaData; 
+ ASTAT Adapter;    
+ MIB_IPNETROW dwIndex;
+ MIB_IPNETROW dwaddr;
+
+ typedef DWORD(CALLBACK * PFLUSHIPNETTABLE)(DWORD);
+ 
+ HINSTANCE hInst;
+ hInst=LoadLibrary("iphlpapi.dll");
+ 
+//处理命令行参数
+    if ( argc == 2)
+    {
+        numberOfHost = atoi( argv[2] );
+    }
+    if ( ( argc >3 ) || ( argc < 2 ) )
+    {
+        printf( "RmtHost v0.2 - Get remote HostName /MacAddress\n" );
+        printf( "Usage　:\n\tRmtHost.exe [RemoteIP] \n\n" );
+        printf( "Example:\n\tRmtHost.exe 192.168.200.254\n" );
+    } 
+                                                                                                    
+    //初始化SOCKET
+    iRet = WSAStartup(MAKEWORD(2,1), &wsaData);
+    if ( iRet != 0 )
+    {
+        printf( "WSAStartup Error:%d\n", GetLastError() );
+        exit( 0 );
+    }
+    nRemoteAddr = inet_addr( "192.168.200.160" );
+//    dwaddr = inet_addr( "192.168.200.160" );
+    remoteHostent= (struct hostent*)malloc( sizeof(struct hostent ));
+    //获取远程机器名
+    sa.s_addr = nRemoteAddr;
+    printf( "\nIpAddress : %s\n", inet_ntoa( sa ) );
+    remoteHostent = gethostbyaddr( (char*)&nRemoteAddr,4, AF_INET );
+    if ( remoteHostent )
+    {
+        printf( "HostName : %s\n",remoteHostent->h_name );
+    }
+    else
+    {
+        printf( "SendARP Error:%d\n", GetLastError());
+
+    }
+    //发送ARP查询包获得远程MAC地址
+
+    iRet=SendARP(nRemoteAddr, (unsigned long)NULL,(PULONG)&macAddress, &macAddLen);
+    if ( iRet == NO_ERROR )
+    {
+    
+    printf("MacAddress is: %02X-%02X-%02X-%02X-%02X-%02X", macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]); 
+    printf("\n");
+
+    }
+
+
+必须安装PLATFORM SDK
+
+
+就可以这样调用来获取远程网卡MAC地址了：
+CString GetMacAddress(CString sNetBiosName)
+{
+    ASTAT Adapter;
+ 
+    NCB ncb;
+    UCHAR uRetCode;
+ 
+    memset(&ncb, 0, sizeof(ncb));
+    ncb.ncb_command = NCBRESET;
+    ncb.ncb_lana_num = 0;
+ 
+    uRetCode = Netbios(&ncb);
+ 
+    memset(&ncb, 0, sizeof(ncb));
+    ncb.ncb_command = NCBASTAT;
+    ncb.ncb_lana_num = 0;
+ 
+    sNetBiosName.MakeUpper();
+ 
+    FillMemory(ncb.ncb_callname, NCBNAMSZ - 1, 0x20);
+ 
+    strcpy((char *)ncb.ncb_callname, (LPCTSTR) sNetBiosName);
+ 
+    ncb.ncb_callname[sNetBiosName.GetLength()] = 0x20;
+    ncb.ncb_callname[NCBNAMSZ] = 0x0;
+ 
+    ncb.ncb_buffer = (unsigned char *) &Adapter;
+    ncb.ncb_length = sizeof(Adapter);
+ 
+    uRetCode = Netbios(&ncb);
+    
+    CString sMacAddress;
+ 
+    if (uRetCode == 0)
+    {
+     sMacAddress.Format(_T("%02x%02x%02x%02x%02x%02x"),
+         Adapter.adapt.adapter_address[0],
+            Adapter.adapt.adapter_address[1],
+            Adapter.adapt.adapter_address[2],
+            Adapter.adapt.adapter_address[3],
+            Adapter.adapt.adapter_address[4],
+            Adapter.adapt.adapter_address[5]);
+    }
+    return sMacAddress;
+}
+
+
+
+000001   1
+000011   2
+000110   3
+001010   4
+001111   5
+010101   6
+011100   7
+100100   8
+
+

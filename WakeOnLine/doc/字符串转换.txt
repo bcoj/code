@@ -1,0 +1,172 @@
+CString 转char *
+
+CString cstr;
+
+char *p = (LPSTR)(LPCTSTR)cstr;
+
+string 转 CString
+CString.format(”%s”, string.c_str());
+
+char 转 CString
+CString.format(”%s”, char*);
+
+char 转 string
+string s(char *);
+
+string 转 char *
+char *p = string.c_str();
+
+CString 转 string
+string s(CString.GetBuffer());
+
+1，string -> CString
+CString.format(”%s”, string.c_str());
+用c_str()确实比data()要好.
+2，char -> string
+string s(char *);
+只能初始化，在不是初始化的地方最好还是用assign().
+3,CString -> string
+string s(CString.GetBuffer());
+GetBuffer()后一定要ReleaseBuffer(),否则就没有释放缓冲区所占的空间.
+
+《C++标准函数库》中说的
+有三个函数可以将字符串的内容转换为字符数组和C―string
+1.data(),返回没有”\0“的字符串数组
+2,c_str()，返回有”\0“的字符串数组
+3，copy()
+
+―――――――――――――――――――――
+
+CString与int、char*、char[100]之间的转换- -
+
+CString与int、char*、char[100]之间的转换- -
+
+CString互转int
+
+将字符转换为整数，可以使用atoi、_atoi64或atol。
+而将数字转换为CString变量，可以使用CString的Format函数。如
+CString s;
+int i = 64;
+s.Format(”%d”, i)
+Format函数的功能很强，值得你研究一下。
+
+void CStrDlg::OnButton1()
+{
+// TODO: Add your control notification handler code here
+CString
+ss=”1212.12″;
+int temp=atoi(ss);
+CString aa;
+aa.Format(”%d”,temp);
+AfxMessageBox(”var is ” + aa);
+}
+
+sart.Format(”%s”,buf);
+
+CString互转char*
+
+///char * TO cstring
+CString strtest;
+char * charpoint;
+charpoint=”give string a value”;
+strtest=charpoint;
+
+///cstring TO char *
+
+CString 转char *
+
+CString cstr;
+
+char *p = (LPSTR)(LPCTSTR)cstr;
+
+string 转 CString
+CString.format(”%s”, string.c_str());
+
+char 转 CString
+CString.format(”%s”, char*);
+
+char 转 string
+string s(char *);
+
+string 转 char *
+char *p = string.c_str();
+
+CString 转 string
+string s(CString.GetBuffer());
+
+1，string -> CString
+CString.format(”%s”, string.c_str());
+用c_str()确实比data()要好.
+2，char -> string
+string s(char *);
+只能初始化，在不是初始化的地方最好还是用assign().
+3,CString -> string
+string s(CString.GetBuffer());
+GetBuffer()后一定要ReleaseBuffer(),否则就没有释放缓冲区所占的空间.
+
+《C++标准函数库》中说的
+有三个函数可以将字符串的内容转换为字符数组和C―string
+1.data(),返回没有”\0“的字符串数组
+2,c_str()，返回有”\0“的字符串数组
+3，copy()
+
+―――――――――――――――――――――
+
+CString与int、char*、char[100]之间的转换- -
+
+CString与int、char*、char[100]之间的转换- -
+
+CString互转int
+
+将字符转换为整数，可以使用atoi、_atoi64或atol。
+而将数字转换为CString变量，可以使用CString的Format函数。如
+CString s;
+int i = 64;
+s.Format(”%d”, i)
+Format函数的功能很强，值得你研究一下。
+
+void CStrDlg::OnButton1()
+{
+// TODO: Add your control notification handler code here
+CString  ss="1212.12";
+int temp=atoi(ss);
+CString aa;
+aa.Format(”%d”,temp);
+AfxMessageBox(”var is ” + aa);
+}
+
+sart.Format(”%s”,buf);
+
+CString互转char*
+
+///char * TO cstring
+CString strtest;
+char * charpoint;
+charpoint=”give string a value”;
+strtest=charpoint;
+
+///cstring TO char *
+charpoint=strtest.GetBuffer(strtest.GetLength());
+
+标准C里没有string,char *==char []==string
+
+可以用CString.Format(”%s”,char *)这个方法来将char *转成CString。要把CString转成char *，用操作符（LPCSTR）CString就可以了。
+
+CString转换 char[100]
+
+char a[100];
+CString str(”aaaaaa”);
+strncpy(a,(LPCTSTR)str,sizeof(a));
+
+
+charpoint=strtest.GetBuffer(strtest.GetLength());
+
+标准C里没有string,char *==char []==string
+
+可以用CString.Format(”%s”,char *)这个方法来将char *转成CString。要把CString转成char *，用操作符（LPCSTR）CString就可以了。
+
+CString转换 char[100]
+
+char a[100];
+CString str(”aaaaaa”);
+strncpy(a,(LPCTSTR)str,sizeof(a));

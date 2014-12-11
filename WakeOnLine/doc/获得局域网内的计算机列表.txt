@@ -1,0 +1,428 @@
+获得局域网中计算机的列表（包括计算机名，IP和MAC）的方法 
+有的时候需要根据MAC来限定登录的计算机，为此查找了不少资料（有来自博客堂和CSDN），下面是获得远程计算机的MAC和局域网中计算机列表的方法。
+
+需要引用的命名空间 
+
+using System; 
+
+using System.Collections; 
+
+using System.Diagnostics; 
+
+using System.Management; 
+
+using System.Net; 
+
+using System.DirectoryServices; 
+
+using System.Runtime.InteropServices; 
+
+using System.Text.RegularExpressions; 
+
+获得本机的MAC地址 
+
+        public static string GetLocalMac() 
+
+        { 
+
+            string strMac = string.Empty; 
+
+            ManagementClass mc = new ManagementClass("Win32_NetworkAdapterConfiguration"); 
+
+            ManagementObjectCollection moc = mc.GetInstances(); 
+
+            foreach(ManagementObject mo in moc) 
+
+            { 
+
+                if ((bool)mo["IPEnabled"] == true) 
+
+                    strMac += mo["MacAddress"].ToString() ; 
+
+  
+
+            } 
+
+            return strMac.ToUpper(); 
+
+        } 
+
+获得远程计算机的MAC地址 
+
+方法一：使用API，利用ARP协议，只能获得同网段计算机的MAC 
+
+        [DllImport("Iphlpapi.dll")] 
+
+        private static extern int SendARP(Int32 dest,Int32 host,ref Int64 mac,ref Int32 length); 
+
+        [DllImport("Ws2_32.dll")] 
+
+        private static extern Int32 inet_addr(string ip); 
+
+        public static string GetRemoteMac(string clientIP) 
+
+        { 
+
+            string ip = clientIP; 
+
+            if ( ip == "127.0.0.1") 
+
+                ip = GetLocalIP()[0]; 
+
+            Int32 ldest=inet_addr(ip); 
+
+            Int64 macinfo=new Int64(); 
+
+            Int32 len=6; 
+
+            try 
+
+            { 
+
+                SendARP(ldest,0,ref macinfo,ref len); 
+
+            } 
+
+            catch 
+
+            { 
+
+                return ""; 
+
+            } 
+
+            string originalMACAddress = Convert.ToString(macinfo,16); 
+
+            if (originalMACAddress.Length<12) 
+
+            { 
+
+                originalMACAddress = originalMACAddress.PadLeft(12,'0'); 
+
+            } 
+
+            string macAddress; 
+
+            if(originalMACAddress!="0000" && originalMACAddress.Length==12) 
+
+            { 
+
+                string mac1,mac2,mac3,mac4,mac5,mac6; 
+
+                mac1=originalMACAddress.Substring(10,2); 
+
+                mac2=originalMACAddress.Substring(8,2); 
+
+                mac3=originalMACAddress.Substring(6,2); 
+
+                mac4=originalMACAddress.Substring(4,2); 
+
+                mac5=originalMACAddress.Substring(2,2); 
+
+                mac6=originalMACAddress.Substring(0,2); 
+
+                macAddress=mac1+"-"+mac2+"-"+mac3+"-"+mac4+"-"+mac5+"-"+mac6; 
+
+            } 
+
+            else 
+
+            { 
+
+                macAddress=""; 
+
+            } 
+
+            return macAddress.ToUpper(); 
+
+        } 
+
+ 
+
+方法二：使用windows的命令nbtstat 
+
+ 
+
+        public static string GetRemoteMacByNetBIOS(string clientIP) 
+
+        { 
+
+            string ip = clientIP; 
+
+            if ( ip == "127.0.0.1") 
+
+                ip = GetLocalIP()[0]; 
+
+            string dirResults=""; 
+
+            ProcessStartInfo psi  = new ProcessStartInfo(); 
+
+            Process proc = new Process(); 
+
+            psi.FileName = "nbtstat.exe"; 
+
+            //psi.RedirectStandardInput = false; 
+
+            psi.RedirectStandardOutput = true;psi.RedirectStandardError=true; 
+
+            psi.Arguments = "-A " + ip; 
+
+            psi.UseShellExecute = false; 
+
+            proc = Process.Start(psi); 
+
+            dirResults = proc.StandardOutput.ReadToEnd(); 
+
+            string error = proc.StandardError.ReadToEnd(); 
+
+            proc.WaitForExit(); 
+
+            dirResults=dirResults.Replace("\r","").Replace("\n","").Replace("\t",""); 
+
+  
+
+            Regex reg=new Regex("Mac[ ]{0,}Address[ ]{0,}=[ ]{0,}(?((.)*?))__MAC",RegexOptions.IgnoreCase|RegexOptions.Compiled); 
+
+            Match mc=reg.Match(dirResults+"__MAC"); 
+
+  
+
+            if(mc.Success) 
+
+            { 
+
+                return mc.Groups["key"].Value.ToUpper(); 
+
+            } 
+
+            else 
+
+            {                    
+
+               return ""; 
+
+            } 
+
+        } 
+
+使用此方法需要足够的操作系统的权限。在Web中,可以将ASP.net用户加入管理员组。 
+
+对于上面两个地方都用到的GetLocalIP是一个获取本机IP的方法： 
+
+        public static string[] GetLocalIP() 
+
+        { 
+
+            string hostName = Dns.GetHostName(); 
+
+            IPHostEntry ipEntry=Dns.GetHostByName(hostName); 
+
+            IPAddress[] arr=ipEntry.AddressList; 
+
+            string[] result = new string[arr.Length]; 
+
+            for(int i=0;i 
+
+            { 
+
+                result[i] = arr[i].ToString();   
+
+            } 
+
+            return result; 
+
+        } 
+
+ 
+
+获得局域网内计算机的列表 
+
+方法一：使用逐个IP地址扫描的方式
+
+利用多线程来对每个IP逐个扫描。
+
+ComputerAddressInfo cai = new ComputerAddressInfo("192.168.1",42,53); 
+
+Thread thScan = new Thread(new ThreadStart(cai.ScanComputers)); 
+
+thScan.Start(); 
+
+//... 
+
+    public class ComputerAddressInfo 
+
+    { 
+
+        private int startIP = 0; 
+
+        private int endIP = 0; 
+
+        private string ipPrefix = ""; 
+
+        private ArrayList computerList = null; 
+
+   
+
+        public ComputerAddressInfo(string ipPrefix,int startIP,int endIP) 
+
+        { 
+
+            this.startIP = startIP; 
+
+            this.endIP = endIP; 
+
+            this.ipPrefix = ipPrefix; 
+
+            computerList = new ArrayList(); 
+
+        } 
+
+ 
+
+ 
+
+ 
+
+  
+        public void ScanComputers() 
+
+        { 
+
+            for(int i=startIP;i<=endIP;i++) 
+
+            { 
+
+                string scanIP = ipPrefix +"."+i.ToString(); 
+
+                IPAddress myScanIP = IPAddress.Parse(scanIP); 
+
+                IPHostEntry myScanHost = null; 
+
+                string[] arr = new string[2]; 
+
+                try 
+
+                { 
+
+                    myScanHost = Dns.GetHostByAddress(myScanIP); 
+
+                } 
+
+                catch 
+
+                { 
+
+                    continue; 
+
+                } 
+
+                if (myScanHost != null) 
+
+                { 
+
+                    arr[0] = myScanHost.HostName; 
+
+                    arr[1] = scanIP; 
+
+                    computerList.Add(arr); 
+
+                } 
+
+            } 
+
+        } 
+
+    } 
+
+ 
+
+此方法速度比较慢。
+
+方法二：使用Active Directory 
+
+        public static ArrayList GetComputerList()  
+
+        {  
+
+            ArrayList list = new ArrayList(); 
+
+            //or  use  "WinNT://your_domain_name"  
+
+            DirectoryEntry  root  =  new  DirectoryEntry("WinNT:"); 
+
+            DirectoryEntries  domains  =  root.Children;  
+
+            domains.SchemaFilter.Add("domain");  
+
+            foreach  (DirectoryEntry  domain  in  domains)  
+
+            {    
+
+                DirectoryEntries  computers  =  domain.Children;  
+
+                computers.SchemaFilter.Add("computer");  
+
+                foreach  (DirectoryEntry  computer  in  computers)  
+
+                {  
+
+                    object[] arr = new string[3]; 
+
+                    IPHostEntry  iphe = null; 
+
+                    try 
+
+                    { 
+
+                        iphe  =  Dns.GetHostByName(computer.Name); 
+
+                    } 
+
+                    catch 
+
+                    { 
+
+                        continue; 
+
+                    } 
+
+                    arr[0] = domain.Name; 
+
+                    arr[1] = computer.Name; 
+
+                    if ( iphe != null && iphe.AddressList.Length >0 ) 
+
+                    { 
+
+                        for ( int i=0;i 
+
+                            arr[2] += iphe.AddressList[i].ToString()+","; 
+
+                        arr[2] = arr[2].ToString().Remove(arr[2].ToString().Length-1,1); 
+
+                    } 
+
+                    else 
+
+                        arr[2] = ""; 
+
+                    list.Add(arr); 
+
+                }  
+
+            }  
+
+            return list; 
+
+        }  
+
+ 
+
+此方法速度也比较慢。
+
+后记 
+
+上面两个获得局域网内的计算机列表的方法都很费时，目前还没有找到更好的办法。
+
+ 
+

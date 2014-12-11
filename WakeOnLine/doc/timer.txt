@@ -1,0 +1,122 @@
+CWnd::SetTimer
+UINT SetTimer( UINT nIDEvent, UINT nElapse, void (CALLBACK EXPORT* lpfnTimer)(HWND, UINT, UINT, DWORD) );
+
+Return Value
+
+The timer identifier of the new timer if the function is successful. An application passes this value to the KillTimer member function to kill the timer. Nonzero if successful; otherwise 0.
+
+如果函数成功，则返回新定时器的标识符。应用程序可以将这个值传递给KillTimer成员函数以销毁定时器。如果成功，则返回非零值；否则返回0。 
+
+Parameters
+
+nIDEvent
+
+Specifies a nonzero timer identifier.
+
+指定了不为零的定时器标识符。 
+
+nElapse
+
+Specifies the time-out value, in milliseconds.
+
+指定了定时值；以毫秒为单位。 
+
+lpfnTimer
+
+Specifies the address of the application-supplied TimerProc callback function that processes the WM_TIMER messages. If this parameter is NULL, the WM_TIMER messages are placed in the application’s message queue and handled by the CWnd object.
+
+指定了应用程序提供的TimerProc回调函数的地址，该函数被用于处理WM_TIMER消息。如果这个参数为NULL，则WM_TIMER消息被放入应用程序的消息队列并由CWnd对象来处理。 
+
+Remarks
+
+Installs a system timer. A time-out value is specified, and every time a time-out occurs, the system posts aWM_TIMER message to the installing application’s message queue or passes the message to an application-defined TimerProc callback function. 
+
+这个函数设置一个系统定时器。指定了一个定时值，每当发生超时，则系统就向设置定时器的应用程序的消息队列发送一个WM_TIMER消息，或者将消息传递给应用程序定义的TimerProc回调函数。 
+
+The lpfnTimer callback function need not be named TimerProc, but it must be defined as follows:
+
+lpfnTimer回调函数不需要被命名为TimerProc，但是它必须按照如下方式定义 
+
+void CALLBACK EXPORT TimerProc(
+   HWND hWnd,      // handle of CWnd that called SetTimer
+   调用SetTimer的CWnd的句柄
+   UINT nMsg,      // WM_TIMER
+   UINT nIDEvent   // timer identification定时器标识
+   DWORD dwTime    // system time系统时间
+);
+
+Timers are a limited global resource; therefore it is important that an application check the value returned by the SetTimer member function to verify that a timer is actually available.
+
+定时器是有限的全局资源；因此对于应用程序来说，检查SetTimer返回的值以确定定时器是否可用是很重要的。
+
+
+Timer事件，即定时器事件，是在游戏编程中，经常使用的一个事件。借助它可以产生定时执行动作的效果。这篇文章，就和大家一起探讨一下如何使用SetTimer（）函数。 
+            1、SetTimer定义在那里？
+
+             SetTimer表示的是定义个定时器。根据定义指定的窗口，在指定的窗口（CWnd）中实现OnTimer事件，这样，就可以相应事件了。
+
+SetTimer有两个函数。一个是全局的函数::SetTimer()
+
+UINT SetTimer(
+       HWND hWnd,               // handle of window for timer messages
+       UINT nIDEvent,           // timer identifier
+       UINT uElapse,            // time-out value
+       TIMERPROC lpTimerFunc        // address of timer procedure
+);
+
+其中hWnd 是指向CWnd的指针，即处理Timer事件的窗口类。说道窗口类（CWnd），我们有必要来看一下CWnd的继承情况：CWnd有以下子类：CFrameWnd,CDialog,CView,CControlBar等类。这也意味这些类中都可以定义SetTimer事件。
+
+同时，SetTimer（）在CWnd中也有定义，即SetTimer（）是CWnd的一个成员函数。CWnd的子类可以调用该函数，来设置触发器。
+
+UINT SetTimer( UINT nIDEvent, UINT nElapse, void (CALLBACK EXPORT* lpfnTimer)(HWND, UINT, UINT, DWORD) );
+
+参数含义：
+
+nIDEvent:是指设置这个定时器的iD，即身份标志，这样在OnTimer（）事件中，才能根据不同的定时器，来做不同的事件响应。这个ID是一个无符号的整型。
+
+nElapse
+
+是指时间延迟。单位是毫秒。这意味着，每隔nElapse毫秒系统调用一次Ontimer（）。
+
+void (CALLBACK EXPORT* lpfnTimer)(HWND, UINT, UINT, DWORD)
+
+Specifies the address of the application-supplied TimerProc callback function that processes the WM_TIMER messages. If this parameter is NULL, the WM_TIMER messages are placed in the application’s message queue and handled by the CWnd object。
+
+意思是，指定应用程序提供的TimerProc回调函数的地址，来处里这个Timer事件。如果是NULL，处理这个Timer事件的定义这个Timer的CWnd对象。他将WM_TIMER消息传递给这个对象，通过实现这个对象的OnTimer（）事件来处理这个Timer事件。
+
+所以，一般情况下，我们将这个值设为NULL，有设置该定时器的对象中的OnTimer（）函数来处理这个事件。
+
+同样的，我们再看看KillTimer（）和OnTimer（）的定义:
+
+KillTimer同SetTimer（）一样，他也有两个，一个是全局的::KillTimer(),另一个是CWnd的一个函数。他的声明如下：
+
+
+//全局函数
+
+BOOL KillTimer(
+     HWND hWnd,       // handle of window that installed timer
+     UINT uIDEvent      // timer identifier
+);
+
+//CWnd函数
+
+BOOL KillTimer( int nIDEvent );
+
+这两个函数表示的意思是将iD为nIDEVENT的定时器移走。使其不再作用。其用法如同SetTimer（）一样。
+
+再看看OnTimer（）
+
+CWnd::OnTimer  
+afx_msg void OnTimer( UINT nIDEvent );
+
+ontimer（）是响应CWnd对象产生的WM_Timer消息。nIDEvent表示要响应TIMER事件的ID。
+
+二、Timer事件的使用：
+
+由以上的分析，我们应该很清楚，如何来使用Timer事件。假定我们在视图上画一个渐变的动画。我们首先在菜单栏上添加一个菜单项，给这个菜单添加命令响应：
+
+pView->SetTimer(1,1000,NULL);//pView是视图类的指针，这里是在视图类当中设置一个定时器。
+
+添加完毕，再给视图类添加一个WM_Timer事件的相应。在OnTimer（）函数中编写汉书，进行相应。
+
+如此，就能做出动画。
