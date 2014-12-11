@@ -1,0 +1,204 @@
+一：问题：如何获得本机/远程主机的MAC地址，且不受操作系统类型的限制，也不受本机和远程主机是否在同一个LAN中的限制。 
+二：解决的方法 
+注：就我所看到的有关“如何获得本机/远程主机的MAC地址”的方法总结如下。 
+这些方法及程序参考了本站及其他站点，以及用google搜索到的一些牛人的解法和源代码，我在此对他们深表感谢，在此就不说他们的大名了。 
+我所总结的方法和以及我写的代码一定存在许多不足，敬请各位同志斧正！！！ 
+欢迎讨论！！！如果您认为值得转载的话，欢迎转载。 
+（一）获得本机的MAC地址 
+1：在WINDOWS 2000/XP下，使用ipconfig /all ，或者route print ，或者nbtstat 本机的IP地址； 
+2：在Linux/UNIX/类UNIX下，使用ifconfig； 
+3：自己写程序/参考牛人的程序实现，其原理可以参考arp协议； 
+（二）获得同一个LAN中主机的MAC地址 
+1：先ping目标主机，然后察看arp表，该方法不受操作系统类型的限制； 
+2：在WINDOWS 2000/XP下，用nbtstat + 目标主机的IP地址； 
+3：在Linux下，用nbtstat + 目标主机的IP地址。（Linux系统本身没有提供， 
+但是在本站的“网络编程”版有一段用C语言写的原码，实现了WINDOWS下的nbtstat命令的部分功能。那段原码里面多了一个“}”符号）； 
+注：2，3两种方法都只适合于目标主机是WINDOWS系统，且目标主机的137(135-139)端口是开放的。 
+4：自己写程序/参考牛人的程序实现，其原理可以参考arp协议； 
+
+（三）获得远程主机的MAC地址 
+1：在WINDOWS 2000/XP下，用nbtstat + 目标主机的IP地址； 
+2：在Linux下，用nbtstat + 目标主机的IP地址。（Linux系统本身没有提供， 
+但是在本站的“网络编程”版有一段用C语言写的原码，实现WINDOWS下的nbtstat命令的部分功能。那段原码里面多了一个“}”符号）； 
+注：1，2两种方法都只适合于目标主机是WINDOWS系统，且目标主机的137(135-139)端口是开放的。 
+3：自己写程序/参考牛人的程序实现 
+三：我自己现在不是牛人，没有对问题给出一个圆满的解决方案。下面是我参考各位牛人的一些思想和源代码，在Java中通过系统调用实现的一段程序。该程序我已经在WINDOWS XP和RedHat Linux 9.0下测试通过。（要求系统只配了一个以太网卡，如有两块网卡，只能检测出其中的一块网卡的MAC地址，且可能造成显示的MAC/IP地址对与实际的MAC/IP地址对不符。） 
+
+
+2008-01-01 15:40:48 Mr.chicken (已婚大叔)
+
+import java.io.*; 
+import java.lang.*; 
+import java.lang.ref.*; 
+import java.lang.reflect.*; 
+import java.net.*; 
+import java.util.*; 
+
+
+public class GetLocalAddrConfig 
+{ 
+public static void main(String[] args) 
+{ 
+//Get IP of local host 
+String IP = ""; 
+IP = getIP(); 
+System.out.println(IP); 
+
+//Get OS type 
+String OSName = getOSName(); 
+
+//Get IPconfig command 
+String IPconfig = getIPconfig(OSName); 
+
+//Get the configuration of your system 
+String sysconfig = getSysConfig(IPconfig); 
+
+//Get MAC address of eth0 
+String MAC = getMAC(sysconfig,OSName); 
+System.out.println("MAC : "+MAC); 
+
+
+
+} 
+//Get OS type 
+public static String getOSName(){ 
+Properties properties = null ; 
+properties = System.getProperties(); 
+String OSName = properties.getProperty("os.name"); 
+return OSName; 
+} 
+//Get IPconfig command 
+public static String getIPconfig(String OSName){ 
+String IPconfig = ""; 
+//RedHat Linux 9.0 
+if (OSName.compareToIgnoreCase("Linux")==0){ 
+IPconfig="ifconfig"; 
+//WINDOWS XP 
+} else if ( OSName.compareToIgnoreCase("Windows XP")==0 ){ 
+IPconfig="ipconfig /all"; 
+//other OS that I don't know 
+} else { 
+System.out.println("I don't know your os type !"); 
+System.exit(1); 
+} 
+return IPconfig; 
+} 
+//Get the configuration of your system 
+public static String getSysConfig(String ipconfig){ 
+String sysconfig = ""; 
+try { 
+Process p = Runtime.getRuntime().exec(ipconfig); 
+InputStreamReader reader = new InputStreamReader(p.getInputStream()); 
+
+char[] localConfig=new char[2000]; 
+reader.read(localConfig); 
+for (int i=0;i<2000 ;i++ ){ 
+sysconfig+=localConfig[i]; 
+} 
+} 
+catch (java.io.IOException ex) { 
+System.err.println("Problems invoking "+ipconfig); 
+System.exit(1); 
+} 
+return sysconfig; 
+} 
+//Get MAC address of eth0 
+//This function can only be used by getMAC 
+private static String getmac(String sysconfig,String macstr){ 
+String mac = ""; 
+int index=sysconfig.indexOf(macstr); 
+index+=macstr.length(); 
+for (; index<=sysconfig.length() ;index++ ){ 
+if (sysconfig.charAt(index)>='0') 
+if (sysconfig.charAt(index)<='9') 
+break; 
+if (sysconfig.charAt(index)>='a') 
+if (sysconfig.charAt(index)<='f') 
+break; 
+if (sysconfig.charAt(index)>='A') 
+if (sysconfig.charAt(index)<='F') 
+break; 
+} 
+for (int i=0;i<17 ;i++ ) 
+{ 
+mac+=sysconfig.charAt(index); 
+index++; 
+} 
+return mac; 
+} 
+//Get MAC address of eth0 
+public static String getMAC(String sysconfig,String OSName){ 
+String MAC = ""; 
+//RedHAT Linux 9.0 
+if (OSName.compareToIgnoreCase("Linux")==0){ 
+MAC=getmac(sysconfig,"Ethernet HWaddr"); 
+} 
+//WINDOWS XP 
+else if ( OSName.compareToIgnoreCase("Windows XP")==0 ){ 
+MAC = getmac(sysconfig,"Physical Address"); 
+} 
+else { 
+System.out.println("I don't know your os type !"); 
+System.exit(1); 
+} 
+return MAC; 
+} 
+//Get IP of eth0 
+public static String getIP(){ 
+String IP = ""; 
+try { 
+Enumeration nifs= NetworkInterface.getNetworkInterfaces(); 
+while (nifs.hasMoreElements()){ 
+NetworkInterface netIf= (NetworkInterface)nifs.nextElement(); 
+
+String nifName= netIf.getName(); 
+if (nifName.compareToIgnoreCase("lo")==0){ 
+continue ; 
+} 
+System.out.print(nifName + " : "); 
+
+for (Enumeration nifIp= netIf.getInetAddresses(); nifIp.hasMoreEle 
+ments();) { 
+InetAddress address= (InetAddress)nifIp.nextElement(); 
+IP= address.getHostAddress(); 
+
+//System.out.println(IP); 
+} 
+} 
+
+} catch (Exception e) { 
+e.printStackTrace(); 
+} 
+return IP; 
+} 
+} 
+
+> 删除
+
+2008-01-01 15:41:33 Mr.chicken (已婚大叔)
+
+使用Nbtstat批量获取MAC地址2007年11月19日 星期一 16:35在一般企业中，为了便于对局域网内的计算机进行有效管理，我们一般使用静态IP地址分配给每一台计算机，由于IP地址通常可能自选更改，单靠IP地址来检查网络并不可靠，不过我们知道网卡的硬件(MAC)地址是唯一的，所以我们可以统计IP地址与MAC地址的对应关系，以便在出现问题时提供依据。本文给出两种方法。 
+一、使用工具 
+建议使用“MAC扫描器”（下载地址http://www.pc560.com.cn/DT_downsoft/getmac.rar），该软件可以远程批量获取MAC地址。它运行于局域网或Internet内的一台机器上，即可监控整个网络的连接情况，实时检测各用户的IP、MAC、主机名、用户名等并记录以供查询。并且可以跨网段扫描，能和数据库中的IP和MAC地址进行比较，只要发现某用户修改了IP或MAC地址，即可报警。 
+　　此外，你也可以使用Windows优化大师批量获取MAC，方法是：点击该软件的“系统性能优化”→“系统安全优化”→“附加工具”→“集群Ping”，即可成批扫出MAC地址，并保存到文件中。 
+二、使用Windows命令 
+　 我们推荐使用Nbtstat命令来获取局域网中电脑的MAC地址以及其他信息。虽然我们也可以使用ping和arp命令来实现，但通过Nbtstat命令来实现具有更好的效果，比如在客户机有防火墙的情况下(现在通常客户机上都安装有防火墙软件)，一般ping命令会失效，不能作为检测机器是否IP地址是否存在的条件，所以统计信息会很不全面，但用Nbtstat命令可以通过。 
+　 另外通过arp命令得到的远程PC上信息会有限，通常只能返回IP地址和物理地址的对应作息，而使用Nbtstat除了可以实现这些功能，同时也能返回远程计算机名称、组织名等一些重要的参考信息，为网络故障的分析和解决提供更多帮助。 
+制作批处理文件批量获取信息 
+　 Nbtstat命令一般是针对一台电脑进行信息的获取。为了更加快捷的获取信息，我们可以通过制作批处理文件的方式实现物理地址批量猎取的目的。 
+　 要制作的批处理文件有两个：（1）allMAC.bat和（2）nbtpc.bat。我们可以打开记事本输入以下命令（命令解析括号中的内容不要输入，如果一定要输入就在括号前面加注析命令rem）. 
+(1) allMAC.bat 
+for /l %%I in (1.1.254) do nbtpc 192.168.1.%%I (命令解析：for命令是循环执行do nbtpc 192.168.1.%%I,in后面的(1.1.254)括号内三个参数分别表示变量I循环的初始数值，每次循环的增加量、循环的终结数值。比如括号中有(1.2.5)三个参数，就表示循环是从192.168.1.1开始，到192.168.1.5结束，由于增量为2，循环的第二个IP地址为192.168.1.3，第三个IP地址为192.168.1.5以此类推。) 
+　如果括号中第二个参数为1，就表示循环是逐个进行，参数/I是表示括号中的参数是按（循环的初始数值、循环的增加量、循环的终结数值）形式进行循环的，如果没有这个参数的话，循环方式就只能按数字个数来定，比如上边的（1.2.5），循环只有三次，do nbtpc后面的IP地址参数分别为192.168.1.1;192.168.1.2和192.168.1.5,%%I是用于存放每次循环的数值的变量。 
+（2）nbtpc.bat 
+@echo off(命令解析：表示不在屏幕回显命令执行过程。) 
+call nbtstat –a %1 |find “MAC Address”>nul(命令解析：这时涉及有两个主要命令Nbtstat命令使用。Find “MAC Address”,表示是否在Nbtstat 命令执行后有MAC Address信息，通常情况下，如果没有找到主机是没有这个英文反馈信息出现在屏幕上的，而只有Host not found.信息出现，＞nul表示find命令发现”MAC Address”。) 
+if %ERRORLEVEL%==0 goto nbt (命令解析：当执行上一条命令而满足条件find “MAC Address”>nul,表示没有出现错误的情况下，程序转向到本批处理文件中标记符为:nbt的过程去执行。) 
+goto end (命令解析：程序转到结束标记符end的地方，表示程序终结。) 
+:nbt　(命令解析：nbt程序处理过程的标记符。) 
+@ echo Currednt ipaddress is: %1 >>allpc.txt（命令解析：当发现相应IP地址的主机存在时，将”当前IP地址”写入allpc.txt文本文件中，如果原来有这个文本的话，就在原来的记录后面追加，如果原来没有这个文件就新建立一个。） 
+ntstat –a %1 >>allpc.txt(命令解析：接前着上面写入的信息，将命令Nbtstat执行的回馈信息写入allpc.txt文件中。) 
+:end （命令解析：程序结束位置标记符号。） 
+注意两个文件要在同一个目录中，然后运行allMAC.BAT文件，程序运行完毕自动生成名称为allpc.txt的报告文件。 
+
+> 删除

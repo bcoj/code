@@ -1,0 +1,67 @@
+帮我看看,为什么 计算机名称可以的到,确的不到MAC呢
+void CSearchIpDlg::GetMacByIp()
+{
+
+/*
+HINSTANCE h=LoadLibrary("Iphlpapi.dll");
+  if (h==NULL)
+  {
+  MessageBox("load Iphlpapi dll file failed");
+  return;
+  }  
+*/
+
+struct hostent *remoteHostent;
+int numberOfHost = 1;
+
+//初始化SOCKET
+WSADATA wsaData;
+int iRet = WSAStartup(MAKEWORD(2,1), &wsaData);
+if ( iRet != 0 )
+{
+MessageBox( "WSAStartup Error");
+WSACleanup( );  
+exit( 0 );
+}
+char * ipaddress;
+
+ipaddress = "192.168.18.134";
+
+int nRemoteAddr = inet_addr( ipaddress );
+remoteHostent= (struct hostent*)malloc( sizeof(struct hostent ));
+struct in_addr sa;
+for ( int i = 0; i < numberOfHost; i ++ )
+{
+//获取远程机器名
+sa.s_addr = nRemoteAddr;
+MessageBox(inet_ntoa( sa ) );
+remoteHostent = gethostbyaddr( (char*)&nRemoteAddr,4, AF_INET );
+if ( remoteHostent )
+MessageBox(remoteHostent->h_name );
+else
+{
+MessageBox( "SendARP Error"); //, GetLastError()
+WSACleanup( );  
+return;
+}
+//发送ARP查询包获得远程MAC地址
+
+unsigned char macAddress[6];
+ULONG macAddLen = 6;
+iRet=SendARP(nRemoteAddr, (unsigned long)NULL,(PULONG)&macAddress, &macAddLen);
+if ( iRet == NO_ERROR )
+{	  
+for( int i =0; i<6; i++ )
+{
+MessageBox((CString)(LPCTSTR)macAddress[i],"MacAddress");	
+}	
+}
+else
+MessageBox( "SendARP Error"); //, GetLastError()
+
+nRemoteAddr = htonl( ntohl( nRemoteAddr ) + 1 );
+    
+  WSACleanup( );  
+
+}
+}

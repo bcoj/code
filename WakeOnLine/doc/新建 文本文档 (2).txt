@@ -1,0 +1,219 @@
+网上下载了段程序看，服务器和一个客户端通信没问题，但是启了多个客户端后，只有第一个能够给服务器发信息，大家能告诉我为什么吗
+
+服务器端代码片断
+  Private Sub Listen()
+  Try
+  tlTcpListen = New TcpListener(iPort)
+  '以8000端口号来初始化TcpListener实例
+  tlTcpListen.Start()
+  '开始监听
+  ToolStripStatusLabel1.Text = "正在监听..."
+  tcClient = tlTcpListen.AcceptTcpClient()
+  '通过TCP连接请求
+  nsStream = tcClient.GetStream()
+  '获取用以发送、接收数据的网络基础数据流
+  srRead = New StreamReader(nsStream)
+  '以得到的网络基础数据流来初始化StreamReader实例
+  ToolStripStatusLabel1.Text = "已经建立TCP连接！"
+  '循环侦听
+  While blistener
+  Dim sMessage As String = srRead.ReadLine()
+  '从网络基础数据流中读取一行数据
+  If (sMessage = "STOP") Then
+  tlTcpListen.Stop()
+  '关闭侦听
+  nsStream.Close()
+  srRead.Close()
+  '释放资源
+  ToolStripStatusLabel1.Text = "无连接！"
+  thThreadRead.Abort()
+  '中止线程
+  Return
+  Else
+  '判断是否为断开TCP连接控制码
+  Dim sTime As String = DateTime.Now.ToShortTimeString()
+  '获取接收数据时的时间
+
+  'TextBox1.Text = TextBox1.Text + sTime + " " + sMessage + vbCrLf
+  SetText(sTime + " " + sMessage)
+  End If
+  End While
+  Catch ex As System.Security.SecurityException
+  MessageBox.Show("侦听失败！", "错误")
+  End Try
+  End Sub
+
+客户端代码片断
+  Try
+  tcpClient = New Sockets.TcpClient(TextBox1.Text, 8000)
+  '对远程主机的8000端口提出TCP连接申请
+  nsStream = tcpClient.GetStream()
+  '通过申请，并获取传送数据的网络基础数据流
+  swWriter = New StreamWriter(nsStream)
+  '使用获取的网络基础数据流来初始化StreamWriter实例
+  Button1.Enabled = False
+  Button2.Enabled = True
+  tcpConnect = True
+  ToolStripStatusLabel1.Text = "已经连接！"
+  Catch
+  MessageBox.Show("无法和远程主机8000端口建立连接！", "错误提示！")
+  Return
+  End Try
+
+
+
+
+
+AcceptTcpClient()以后没有循环回去,所以只接受一次连接请求,以后的都不会再接受了.
+
+你必须这样:
+
+VB.NET code
+Do While True
+   tcClient = tlTcpListen.AcceptTcpClient() 
+   ......
+Loop
+
+
+
+
+另外最好把接受的tcClient丢到单独一个线程里去处理数据和返回,主线程就只管接受连接请求就行了 
+ 
+ 
+对我有用[0]丢个板砖[0]引用举报管理TOP精华推荐：数据库类的扩展:数据库的建立和表的建立 
+
+
+way_hamehame
+(way_hamehame)
+
+等　级：
+
+ #4楼 得分：0回复于：2009-03-26 10:20:18引用 3 楼 heng_s 的回复:
+AcceptTcpClient()以后没有循环回去,所以只接受一次连接请求,以后的都不会再接受了. 
+
+你必须这样: 
+
+VB.NET code
+Do While True
+tcClient = tlTcpListen.AcceptTcpClient() 
+......
+Loop
+
+
+
+
+
+另外最好把接受的tcClient丢到单独一个线程里去处理数据和返回,主线程就只管接受连接请求就行了
+
+
+这样好像不行，2个客户端各自发了一条信息后，就不动了，再也不能发了
+
+有没有可以互相通信的例子阿 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+你试试下面的代码应该好用。http://bingning.net
+
+客户端
+
+VB.NET code
+
+Private Class AsyncStateObject
+    Public Socket As System.Net.Sockets.Socket
+    Public ReceiveBuffer() As Byte
+    Public ReceivedData As System.IO.MemoryStream
+
+    Public Sub New(ByVal soc As System.Net.Sockets.Socket)
+        Me.Socket = soc
+        Me.ReceiveBuffer = New Byte(1023) {}
+        Me.ReceivedData = New System.IO.MemoryStream
+    End Sub
+End Class
+
+Private Shared Sub StartReceive _
+    (ByVal soc As System.Net.Sockets.Socket)
+    Dim so As New AsyncStateObject(soc)
+    soc.BeginReceive(so.ReceiveBuffer, 0, so.ReceiveBuffer.Length, _
+        System.Net.Sockets.SocketFlags.None, _
+        New System.AsyncCallback(AddressOf ReceiveDataCallback), so)
+End Sub
+
+Private Shared Sub ReceiveDataCallback _
+    (ByVal ar As System.IAsyncResult)
+    Dim so As AsyncStateObject _
+        = CType(ar.AsyncState, AsyncStateObject)
+
+    Dim len As Integer = 0
+    Try
+        len = so.Socket.EndReceive(ar)
+    Catch ex As System.ObjectDisposedException
+         System.Console.WriteLine("关闭了。")
+        Return
+    End Try
+
+    If len <= 0 Then
+        System.Console.WriteLine("已被断开。")
+        so.Socket.Close()
+        Return
+    End If
+
+    so.ReceivedData.Write(so.ReceiveBuffer, 0, len)
+    If so.Socket.Available = 0 Then
+        Dim str As String = _
+            System.Text.Encoding.UTF8.GetString( _
+            so.ReceivedData.ToArray())
+        System.Console.WriteLine(str)
+        so.ReceivedData.Close()
+        so.ReceivedData = New System.IO.MemoryStream
+    End If
+
+    so.Socket.BeginReceive(so.ReceiveBuffer, 0, _
+        so.ReceiveBuffer.Length, _
+        System.Net.Sockets.SocketFlags.None, _
+        New System.AsyncCallback(AddressOf ReceiveDataCallback), so)
+End Sub
+
+
+
+
+服务器端
+
+VB.NET code
+
+Private Shared Sub StartAccept( _
+    ByVal server As System.Net.Sockets.Socket)
+    server.BeginAccept(New System.AsyncCallback( _
+        AddressOf AcceptCallback), server)
+End Sub
+
+Private Shared Sub AcceptCallback(ByVal ar As System.IAsyncResult)
+    Dim server As System.Net.Sockets.Socket = _
+        CType(ar.AsyncState, System.Net.Sockets.Socket)
+
+    Dim client As System.Net.Sockets.Socket = Nothing
+    Try
+        client = server.EndAccept(ar)
+    Catch
+        System.Console.WriteLine("关闭了。")
+        Return
+    End Try
+
+    client.Send(System.Text.Encoding.UTF8.GetBytes("你好。"))
+    client.Shutdown(System.Net.Sockets.SocketShutdown.Both)
+    client.Close()
+
+    server.BeginAccept(New System.AsyncCallback( _
+        AddressOf AcceptCallback), server)
+End Sub
+
+

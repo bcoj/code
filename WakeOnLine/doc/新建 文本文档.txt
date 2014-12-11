@@ -1,0 +1,86 @@
+得到对方电脑的名称
+
+NBTSTAT -A XX.XX.XX.XX  
+
+
+netstat -a 显示出你的计算机当前所开放的所有端口
+
+捆绑IP和MAC地址，解决局域网内盗用IP！：  
+
+ARP －s 192.168.10.59 00 －50－ff－6c－08－75  
+　　
+    8.在网络邻居上隐藏你的计算机  
+
+　　net config server /hidden:yes  
+　　net config server /hidden:no 则为开启  
+
+
+
+    10.路由跟踪命令  
+
+　　A.tracert pop.pcpop.com  
+　　B.pathping pop.pcpop.com 除了显示路由外，还提供325S的分析，计算丢失包的％  
+
+ 
+  11.关于共享安全的几个命令  
+　　A.查看你机器的共享资源 net share  
+　　B.手工删除共享（可以编个bat文件，开机自运行，把共享都删了！）  
+　　net share c$ /d  
+　　net share d$ /d  
+　　net share ipc$ /d  
+　　net share admin$ /d  
+　　注意$后有空格。  
+　　C.增加一个共享：  
+　　c:\net share mymovie=e:\downloads\movie /users:1  
+　　mymovie 共享成功。  
+　　同时限制链接用户数为1人。  
+
+     12.在DOS行下设置静态IP  
+
+　　A.设置静态IP  
+　　CMD  
+　　netsh  
+　　netsh>int  
+　　interface>ip  
+　　interface ip>set add "本地链接" static IP地址 mask gateway  
+　　B.查看IP设置  
+　　interface ip>show address  
+
+
+
+ 
+    软件下载 文章资讯  站内搜索  
+DOS命令下获取远程主机MAC地址的三种方法 
+ 
+2008-12-2 16:18:40
+
+DOS命令下获取远程主机MAC地址的三种方法
+第一种方法:使用Arp命令，这个命令很多的网络或者是系统管理员应该不会对它陌生了
+
+，它的使用方法非常的简单。 要想使用Arp命令获取远程主机的MAC地址，管理员只要用
+
+Ping命令ping一下远程主机的IP地址，然后用arp -a 或者是 arp -g 就得到一个IP地址
+
+和Mac地址的对应表，这样，系统管理员就获得了需要的远程主机的MAC地址。
+
+
+第二种方法：使用GetMac命令，这个命令对于一些网络管理员来说也许有些陌生，很多
+
+的时候我们只需要使用Arp -a 或者是 Arp -g就可以获得远程主机的IP地址了，但是
+
+GetMac命令在有些时候还是需要用到的。使用这个命令需要知道远程主机的用户名，密
+
+码及IP地址。用法  GetMac /S 要连接的远程系统IP /U  用户名  /P 密码 
+
+
+第三种方法：用nbtstat命令，也可以获取需要的远程主机的IP地址。这个命令使用起来
+
+和Arp命令一样的方便。使用方法为 nbtstat -A 远程主机IP地址,这样就可以获得所需
+
+要的远程主机的MAC地址了
+
+ 
+ 
+
+
+

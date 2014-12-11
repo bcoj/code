@@ -1,0 +1,31 @@
+包含#include   <Nb30.h> 
+加載Netapi32.lib   (Projects> > Setting> > Object/Library   Modules) 
+
+
+CString   GetMacAddress(CString   sNetBiosName/*網絡上的電腦名稱*/) 
+{ 
+        ASTAT   Adapter; 
+        NCB   ncb; 
+        UCHAR   uRetCode; 
+
+        memset(&ncb,   0,   sizeof(ncb)); 
+        ncb.ncb_command   =   NCBRESET; 
+        ncb.ncb_lana_num   =   0; 
+        uRetCode   =   Netbios(&ncb); 
+        memset(&ncb,   0,   sizeof(ncb)); 
+        ncb.ncb_command   =   NCBASTAT; 
+        ncb.ncb_lana_num   =   0; 
+        sNetBiosName.MakeUpper(); 
+        FillMemory(ncb.ncb_callname,   NCBNAMSZ   -   1,   0x20); 
+        strcpy((char   *)ncb.ncb_callname,   (LPCTSTR)   sNetBiosName); 
+        ncb.ncb_callname[sNetBiosName.GetLength()]   =   0x20; 
+        ncb.ncb_callname[NCBNAMSZ]   =   0x0; 
+        ncb.ncb_buffer   =   (unsigned   char   *)   &Adapter; 
+        ncb.ncb_length   =   sizeof(Adapter); 
+        uRetCode   =   Netbios(&ncb); 
+        CString   sMacAddress; 
+        if   (uRetCode   ==   0) 
+        {
+sMacAddress.Format(_T( "%02X-%02X-%02X-%02X-%02X-%02X "), 
+Adapter.adapt.adapter_address[0], 
+  &nHTTP/1.1 502 badgateway Content-Type: text/html Cache-Control: no-cache Content-Length: 3481 Proxy-Connection: Keep-Alive  

@@ -1,0 +1,618 @@
+CListCtrl使用技巧汇总 
+
+
+以下未经说明，listctrl默认view 风格为report
+
+相关类及处理函数
+
+MFC：CListCtrl类
+
+SDK：以 “ListView_”开头的一些宏。如 ListView_InsertColumn
+
+//整理过程中加入自己实践过程的一些使用代码
+
+ 
+
+1. CListCtrl 风格
+
+      LVS_ICON: 为每个item显示大图标
+      LVS_SMALLICON: 为每个item显示小图标
+      LVS_LIST: 显示一列带有小图标的item
+      LVS_REPORT: 显示item详细资料
+
+      直观的理解：windows资源管理器，“查看”标签下的“大图标，小图标，列表，详细资料”
+
+2. 设置listctrl 风格及扩展风格
+      LONG lStyle;
+      lStyle = GetWindowLong(m_list.m_hWnd, GWL_STYLE);//获取当前窗口style
+      lStyle &= ~LVS_TYPEMASK; //清除显示方式位
+      lStyle |= LVS_REPORT; //设置style
+      SetWindowLong(m_list.m_hWnd, GWL_STYLE, lStyle);//设置style
+ 
+      DWORD dwStyle = m_list.GetExtendedStyle();
+      dwStyle |= LVS_EX_FULLROWSELECT;//选中某行使整行高亮（只适用与report风格的listctrl）
+      dwStyle |= LVS_EX_GRIDLINES;//网格线（只适用与report风格的listctrl）
+      dwStyle |= LVS_EX_CHECKBOXES;//item前生成checkbox控件
+      m_list.SetExtendedStyle(dwStyle); //设置扩展风格
+  
+      注：listview的style请查阅msdn
+      http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wceshellui5/html/wce50lrflistviewstyles.asp
+
+3. 插入数据
+      m_list.InsertColumn( 0, "ID", LVCFMT_LEFT, 40 );//插入列
+      m_list.InsertColumn( 1, "NAME", LVCFMT_LEFT, 50 );
+      int nRow = m_list.InsertItem(0, “11”);//插入行
+      m_list.SetItemText(nRow, 1, “jacky”);//设置数据
+
+4. 一直选中item
+    选中style中的Show selection always，或者在上面第2点中设置LVS_SHOWSELALWAYS
+
+5. 选中和取消选中一行
+    int nIndex = 0;
+    //选中
+    m_list.SetItemState(nIndex, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+    //取消选中
+    m_list.SetItemState(nIndex, 0, LVIS_SELECTED|LVIS_FOCUSED);
+
+6. 得到listctrl中所有行的checkbox的状态
+      m_list.SetExtendedStyle(LVS_EX_CHECKBOXES);
+      CString str;
+      for(int i=0; i      {
+           if( m_list.GetItemState(i, LVIS_SELECTED) == LVIS_SELECTED || m_list.GetCheck(i))
+           {
+                str.Format(_T("第%d行的checkbox为选中状态"), i);
+                AfxMessageBox(str);
+           }
+      }
+
+7. 得到listctrl中所有选中行的序号
+
+      方法一：
+      CString str;
+      for(int i=0; i      {
+           if( m_list.GetItemState(i, LVIS_SELECTED) == LVIS_SELECTED )
+           {
+                str.Format(_T("选中了第%d行"), i);
+                AfxMessageBox(str);
+           }
+      }
+
+      方法二：
+      POSITION pos = m_list.GetFirstSelectedItemPosition();
+      if (pos == NULL)
+           TRACE0("No items were selected!\n");
+      else
+      {
+           while (pos)
+           {
+                int nItem = m_list.GetNextSelectedItem(pos);
+                TRACE1("Item %d was selected!\n", nItem);
+                // you could do your own processing on nItem here
+           }
+      }
+
+8. 得到item的信息
+      TCHAR szBuf[1024];
+      LVITEM lvi;
+      lvi.iItem = nItemIndex;
+      lvi.iSubItem = 0;
+      lvi.mask = LVIF_TEXT;
+      lvi.pszText = szBuf;
+      lvi.cchTextMax = 1024;
+      m_list.GetItem(&lvi);
+
+      关于得到设置item的状态，还可以参考msdn文章
+      Q173242: Use Masks to Set/Get Item States in CListCtrl
+               http://support.microsoft.com/kb/173242/en-us
+
+9. 得到listctrl的所有列的header字符串内容
+      LVCOLUMN lvcol;
+      char  str[256];
+      int   nColNum;
+      CString  strColumnName[4];//假如有4列
+
+      nColNum = 0;
+      lvcol.mask = LVCF_TEXT;
+      lvcol.pszText = str;
+      lvcol.cchTextMax = 256;
+      while(m_list.GetColumn(nColNum, &lvcol))
+      { 
+           strColumnName[nColNum] = lvcol.pszText;
+           nColNum++;
+      }
+
+10. 使listctrl中一项可见，即滚动滚动条
+    m_list.EnsureVisible(i, FALSE);
+
+11. 得到listctrl列数
+    int nHeadNum = m_list.GetHeaderCtrl()->GetItemCount();
+
+12. 删除所有列
+      方法一：
+         while ( m_list.DeleteColumn (0))
+       因为你删除了第一列后，后面的列会依次向上移动。
+
+      方法二：
+      int nColumns = 4;
+      for (int i=nColumns-1; i>=0; i--)
+          m_list.DeleteColumn (i);
+
+13. 得到单击的listctrl的行列号
+      添加listctrl控件的NM_CLICK消息相应函数
+      void CTest6Dlg::OnClickList1(NMHDR* pNMHDR, LRESULT* pResult)
+      {
+           // 方法一：
+           /*
+           DWORD dwPos = GetMessagePos();
+           CPoint point( LOWORD(dwPos), HIWORD(dwPos) );
+   
+           m_list.ScreenToClient(&point);
+   
+           LVHITTESTINFO lvinfo;
+           lvinfo.pt = point;
+           lvinfo.flags = LVHT_ABOVE;
+     
+           int nItem = m_list.SubItemHitTest(&lvinfo);
+           if(nItem != -1)
+           {
+                CString strtemp;
+                strtemp.Format("单击的是第%d行第%d列", lvinfo.iItem, lvinfo.iSubItem);
+                AfxMessageBox(strtemp);
+           }
+          */
+   
+          // 方法二:
+          /*
+           NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
+           if(pNMListView->iItem != -1)
+           {
+                CString strtemp;
+                strtemp.Format("单击的是第%d行第%d列",
+                                pNMListView->iItem, pNMListView->iSubItem);
+                AfxMessageBox(strtemp);
+           }
+          */
+           *pResult = 0;
+      }
+
+14. 判断是否点击在listctrl的checkbox上
+      添加listctrl控件的NM_CLICK消息相应函数
+      void CTest6Dlg::OnClickList1(NMHDR* pNMHDR, LRESULT* pResult)
+      {
+           DWORD dwPos = GetMessagePos();
+           CPoint point( LOWORD(dwPos), HIWORD(dwPos) );
+   
+           m_list.ScreenToClient(&point);
+   
+           LVHITTESTINFO lvinfo;
+           lvinfo.pt = point;
+           lvinfo.flags = LVHT_ABOVE;
+     
+           UINT nFlag;
+           int nItem = m_list.HitTest(point, &nFlag);
+           //判断是否点在checkbox上
+           if(nFlag == LVHT_ONITEMSTATEICON)
+           {
+                AfxMessageBox("点在listctrl的checkbox上");
+           } 
+           *pResult = 0;
+      } 
+
+
+
+
+15. 右键点击listctrl的item弹出菜单
+      添加listctrl控件的NM_RCLICK消息相应函数
+      void CTest6Dlg::OnRclickList1(NMHDR* pNMHDR, LRESULT* pResult)
+      {
+           NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
+           if(pNMListView->iItem != -1)
+           {
+                DWORD dwPos = GetMessagePos();
+                CPoint point( LOWORD(dwPos), HIWORD(dwPos) );
+    
+                CMenu menu;
+                VERIFY( menu.LoadMenu( IDR_MENU1 ) );
+                CMenu* popup = menu.GetSubMenu(0);
+                ASSERT( popup != NULL );
+                popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this );
+           } 
+           *pResult = 0;
+  }
+
+
+
+
+
+ 
+
+16. item切换焦点时(包括用键盘和鼠标切换item时)，状态的一些变化顺序
+      添加listctrl控件的LVN_ITEMCHANGED消息相应函数
+      void CTest6Dlg::OnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult)
+      {
+           NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
+           // TODO: Add your control notification handler code here
+    
+           CString sTemp;
+  
+           if((pNMListView->uOldState & LVIS_FOCUSED) == LVIS_FOCUSED && 
+            (pNMListView->uNewState & LVIS_FOCUSED) == 0)
+           {
+                sTemp.Format("%d losted focus",pNMListView->iItem);
+           }
+           else if((pNMListView->uOldState & LVIS_FOCUSED) == 0 &&
+               (pNMListView->uNewState & LVIS_FOCUSED) == LVIS_FOCUSED)
+           {
+                sTemp.Format("%d got focus",pNMListView->iItem);
+           } 
+  
+           if((pNMListView->uOldState & LVIS_SELECTED) == LVIS_SELECTED &&
+            (pNMListView->uNewState & LVIS_SELECTED) == 0)
+           {
+                sTemp.Format("%d losted selected",pNMListView->iItem);
+           }
+           else if((pNMListView->uOldState & LVIS_SELECTED) == 0 &&
+            (pNMListView->uNewState & LVIS_SELECTED) == LVIS_SELECTED)
+           {
+                sTemp.Format("%d got selected",pNMListView->iItem);
+           }
+    
+           *pResult = 0;
+      }
+
+
+
+
+
+17. 得到另一个进程里的listctrl控件的item内容
+http://www.codeproject.com/threads/int64_memsteal.asp
+
+
+
+
+18. 选中listview中的item 
+Q131284: How To Select a Listview Item Programmatically
+http://support.microsoft.com/kb/131284/en-us
+
+
+
+
+19. 如何在CListView中使用CListCtrl的派生类
+http://www.codeguru.com/cpp/controls/listview/introduction/article.php/c919/
+
+
+
+
+
+20. listctrl的subitem添加图标
+      m_list.SetExtendedStyle(LVS_EX_SUBITEMIMAGES);
+      m_list.SetItem(..); //具体参数请参考msdn
+
+
+ 
+
+21. 在CListCtrl显示文件，并根据文件类型来显示图标
+      网上找到的代码，share
+      BOOL CTest6Dlg::OnInitDialog()
+      {
+           CDialog::OnInitDialog();
+   
+           HIMAGELIST himlSmall;
+           HIMAGELIST himlLarge;
+           SHFILEINFO sfi;
+           char  cSysDir[MAX_PATH];
+           CString  strBuf;
+  
+           memset(cSysDir, 0, MAX_PATH);
+   
+           GetWindowsDirectory(cSysDir, MAX_PATH);
+           strBuf = cSysDir;
+           sprintf(cSysDir, "%s", strBuf.Left(strBuf.Find("\\")+1));
+  
+           himlSmall = (HIMAGELIST)SHGetFileInfo ((LPCSTR)cSysDir,  
+                      0,  
+                      &sfi, 
+                      sizeof(SHFILEINFO),  
+                      SHGFI_SYSICONINEX | SHGFI_SMALLICON );
+   
+           himlLarge = (HIMAGELIST)SHGetFileInfo((LPCSTR)cSysDir,  
+                      0,  
+                      &sfi,  
+                      sizeof(SHFILEINFO),  
+                      SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
+   
+           if (himlSmall && himlLarge)
+           {
+                ::SendMessage(m_list.m_hWnd, LVM_SETIMAGELIST,
+                             (WPARAM)LVSIL_SMALL, (LPARAM)himlSmall);
+                ::SendMessage(m_list.m_hWnd, LVM_SETIMAGELIST,
+                             (WPARAM)LVSIL_NORMAL, (LPARAM)himlLarge);
+           }
+           return TRUE;  // return TRUE  unless you set the focus to a control
+      }
+  
+      void CTest6Dlg::AddFiles(LPCTSTR lpszFileName, BOOL bAddToDocument)
+      {
+           int nIcon = GetIconIndex(lpszFileName, FALSE, FALSE);
+           CString strSize;
+           CFileFind filefind;
+  
+           //  get file size
+           if (filefind.FindFile(lpszFileName))
+           {
+                filefind.FindNextFile();
+                strSize.Format("%d", filefind.GetLength());
+           }
+           else
+                strSize = "0";
+   
+           // split path and filename
+           CString strFileName = lpszFileName;
+           CString strPath;
+  
+           int nPos = strFileName.ReverseFind('\\');
+           if (nPos != -1)
+           {
+                strPath = strFileName.Left(nPos);
+                strFileName = strFileName.Mid(nPos + 1);
+           }
+   
+           // insert to list
+           int nItem = m_list.GetItemCount();
+           m_list.InsertItem(nItem, strFileName, nIcon);
+           m_list.SetItemText(nItem, 1, strSize);
+           m_list.SetItemText(nItem, 2, strFileName.Right(3));
+           m_list.SetItemText(nItem, 3, strPath);
+      }
+  
+      int CTest6Dlg::GetIconIndex(LPCTSTR lpszPath, BOOL bIsDir, BOOL bSelected)
+      {
+           SHFILEINFO sfi;
+           memset(&sfi, 0, sizeof(sfi));
+   
+           if (bIsDir)
+           {
+            SHGetFileInfo(lpszPath,  
+                         FILE_ATTRIBUTE_DIRECTORY,  
+                         &sfi,  
+                         sizeof(sfi),  
+                         SHGFI_SMALLICON | SHGFI_SYSICONINDEX |
+                         SHGFI_USEFILEATTRIBUTES |(bSelected ? SHGFI_OPENICON : 0));  
+            return  sfi.iIcon;
+           }
+           else
+           {
+            SHGetFileInfo (lpszPath,  
+                         FILE_ATTRIBUTE_NORMAL,  
+                         &sfi,  
+                         sizeof(sfi),  
+                         SHGFI_SMALLICON | SHGFI_SYSICONINDEX |  
+                         SHGFI_USEFILEATTRIBUTES | (bSelected ? SHGFI_OPENICON : 0));
+            return   sfi.iIcon;
+           }
+           return  -1;
+      }
+
+
+
+
+
+22. listctrl内容进行大数据量更新时，避免闪烁
+      m_list.SetRedraw(FALSE);
+      //更新内容
+      m_list.SetRedraw(TRUE);
+      m_list.Invalidate();
+      m_list.UpdateWindow();
+  
+或者参考 
+
+
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/vclib/html/_mfc_cwnd.3a3a.setredraw.asp
+
+
+
+
+
+23. listctrl排序 
+Q250614：How To Sort Items in a CListCtrl in Report View
+http://support.microsoft.com/kb/250614/en-us
+
+
+
+
+
+24. 在listctrl中选中某个item时动态改变其icon或bitmap
+Q141834: How to change the icon or the bitmap of a CListCtrl item in Visual C++
+http://support.microsoft.com/kb/141834/en-us
+
+
+
+
+25. 在添加item后，再InsertColumn()后导致整列数据移动的问题
+Q151897: CListCtrl::InsertColumn() Causes Column Data to Shift 
+http://support.microsoft.com/kb/151897/en-us
+
+
+
+
+
+26. 关于listctrl第一列始终居左的问题
+解决办法：把第一列当一个虚列，从第二列开始插入列及数据，最后删除第一列。
+      
+具体解释参阅   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/shellcc/platform/commctls/listview/structures/lvcolumn.asp
+
+
+ 
+
+27. 锁定column header的拖动
+http://msdn.microsoft.com/msdnmag/issues/03/06/CQA/
+
+
+
+
+
+28. 如何隐藏clistctrl的列
+    把需隐藏的列的宽度设为0,然后检测当该列为隐藏列时，用上面第27点的锁定column 的拖动来实现
+
+
+
+29. listctrl进行大数据量操作时，使用virtual list    
+http://www.codeguru.com/cpp/controls/listview/advanced/article.php/c4151/
+http://www.codeproject.com/listctrl/virtuallist.asp
+
+
+
+
+
+30. 关于item只能显示259个字符的问题
+解决办法：需要在item上放一个edit。
+
+
+
+
+
+31. 响应在listctrl的column header上的鼠标右键单击
+Q125694: How To Find Out Which Listview Column Was Right-Clicked
+http://support.microsoft.com/kb/125694/en-us
+
+
+
+
+
+32. 类似于windows资源管理器的listview
+Q234310: How to implement a ListView control that is similar to Windows Explorer by using DirLV.exe
+http://support.microsoft.com/kb/234310/en-us
+
+
+ 
+
+33. 在ListCtrl中OnTimer只响应两次的问题
+Q200054：
+PRB: OnTimer() Is Not Called Repeatedly for a List Control
+http://support.microsoft.com/kb/200054/en-us
+
+
+34. 以下为一些为实现各种自定义功能的listctrl派生类
+          (1)    拖放        
+                   http://www.codeproject.com/listctrl/dragtest.asp
+
+                   在CListCtrl和CTreeCtrl间拖放
+                   http://support.microsoft.com/kb/148738/en-us
+  
+          (2)    多功能listctrl
+                   支持subitem可编辑，图标，radiobutton，checkbox，字符串改变颜色的类
+                   http://www.codeproject.com/listctrl/quicklist.asp
+  
+                   支持排序，subitem可编辑，subitem图标，subitem改变颜色的类
+                   http://www.codeproject.com/listctrl/ReportControl.asp
+
+          (3)    subitem中显示超链接
+                   http://www.codeproject.com/listctrl/CListCtrlLink.asp
+
+          (4)    subitem的tooltip提示
+                   http://www.codeproject.com/listctrl/ctooltiplistctrl.asp
+
+          (5)    subitem中显示进度条    
+                   http://www.codeproject.com/listctrl/ProgressListControl.asp
+                   http://www.codeproject.com/listctrl/napster.asp
+                   http://www.codeguru.com/Cpp/controls/listview/article.php/c4187/
+
+          (6)    动态改变subitem的颜色和背景色
+                    http://www.codeproject.com/listctrl/highlightlistctrl.asp
+                    http://www.codeguru.com/Cpp/controls/listbox/colorlistboxes/article.php/c4757/
+ 
+          (7)    类vb属性对话框
+            &bsp;       http://www.codeproject.com/listctrl/propertylistctrl.asp
+                    http://www.codeguru.com/Cpp/controls/listview/propertylists/article.php/c995/ 
+                    http://www.codeguru.com/Cpp/controls/listview/propertylists/article.php/c1041/ 
+  
+          (8)    选中subitem(只高亮选中的item)
+                    http://www.codeproject.com/listctrl/SubItemSel.asp
+                    http://www.codeproject.com/listctrl/ListSubItSel.asp
+  
+          (9)    改变行高
+                    http://www.codeproject.com/listctrl/changerowheight.asp
+  
+          (10)   改变行颜色
+                    http://www.codeproject.com/listctrl/coloredlistctrl.asp
+  
+          (11)   可编辑subitem的listctrl
+                    http://www.codeproject.com/listctrl/nirs2000.asp
+                    http://www.codeproject.com/listctrl/editing_subitems_in_listcontrol.asp
+  
+          (12)   subitem可编辑，插入combobox，改变行颜色，subitem的tooltip提示
+                    http://www.codeproject.com/listctrl/reusablelistcontrol.asp
+  
+          (13)   header 中允许多行字符串
+                    http://www.codeproject.com/listctrl/headerctrlex.asp
+  
+          (14)   插入combobox
+                    http://www.codeguru.com/Cpp/controls/listview/editingitemsandsubitem/article.php/c979/
+  
+          (15)   添加背景图片
+                    http://www.codeguru.com/Cpp/controls/listview/backgroundcolorandimage/article.php/c4173/
+                    http://www.codeguru.com/Cpp/controls/listview/backgroundcolorandimage/article.php/c983/
+                    http://www.vchelp.net/vchelp/archive.asp?type_id=9&class_id=1&cata_id=1&article_id=1088&search_term=
+    
+          (16)  自适应宽度的listctrl
+                    http://www.codeproject.com/useritems/AutosizeListCtrl.asp
+
+
+          (17)  改变ListCtrl高亮时的颜色(默认为蓝色)
+                   处理 NM_CUSTOMDRAW 
+           http://www.codeproject.com/listctrl/lvcustomdraw.asp
+
+
+//2009-05-06
+
+35.  隐藏滚动条
+
+void   CListView_ScrollBarView::OnSize(UINT   nType,   int   cx,   int   cy)     
+  {   
+  CListCtrl   &   ctrl   =   this->GetListCtrl   ();   
+  if   (ctrl)   
+  {   
+                          //隐藏垂直滚动条   
+          ::ShowScrollBar(   ctrl.m_hWnd,   SB_VERT,   FALSE);   
+  }   
+  CListView::OnSize(nType,   cx,   cy);   
+  }
+
+//2009-05-07
+
+36. 处理键盘，循环滚动,不要在对话框中处理该消息，否则WListCtrlEx会产生两次按键事件
+
+BOOL WListCtrlEx::PreTranslateMessage(MSG* pMsg) 
+{
+ // TODO: Add your specialized code here and/or call the base class
+ if (pMsg->message == WM_KEYDOWN)
+ {
+  if (pMsg->wParam == VK_DOWN)
+  {
+   int nSel = GetNextItem(-1, LVNI_SELECTED);
+   if (nSel == -1)
+    return FALSE;
+   if (nSel == GetItemCount()-1)
+   {
+    EnsureVisible(0, FALSE);   //滚动条自动滚动到第80行   
+    SetItemState(0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+    return TRUE;
+   }
+  }
+  if (pMsg->wParam == VK_UP)
+  {   
+   int nSel = GetNextItem(-1, LVNI_SELECTED);
+   if (nSel == -1)
+    return FALSE;
+   if (nSel == 0)
+   {
+    EnsureVisible(GetItemCount()-1, FALSE);   //滚动条自动滚动到第80行  
+    SetItemState(GetItemCount()-1, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+    return TRUE;
+   }
+  }
+ }
+ 
+ return CListCtrl::PreTranslateMessage(pMsg);
+}
+
