@@ -2,3 +2,17 @@
 2.去除重复记录功能，
 3.程序关闭后 wake timer 不工作
 
+
+
+git
+
+commit  提交到本地
+push  提交到服务器
+
+提示your current branch is behind
+
+解决办法：pull 分支到本地
+
+
+1. git fetch：相当于是从远程获取最新版本到本地，不会自动merge
+2. git pull：相当于是从远程获取最新版本并merge到本地
