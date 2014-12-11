@@ -3,11 +3,12 @@
 3.程序关闭后 wake timer 不工作
 
 
+操作流程：
+1.git clone
 
-git
-
-commit  提交到本地
-push  提交到服务器
+2.commit  提交到本地
+3.pull 使服务器版本与本地修改前版本一致
+4.push  提交到服务器
 
 提示your current branch is behind
 
